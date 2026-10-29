@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>墨墨网页快捷键设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <h1>墨墨网页快捷键</h1>
+    <p class="intro">配置墨墨背单词网页版复习时的键盘操作。默认与网页内置快捷键一致。</p>
+    <label class="toggle-row"><input id="enabled" type="checkbox"> 启用快捷键</label>
+    <section>
+      <h2>按键映射</h2>
+      <p class="hint">点击输入框后按一个键或组合键，再点击保存。空格会显示为 Space。</p>
+      <div id="shortcut-fields"></div>
+    </section>
+    <div class="actions">
+      <button id="save" type="button">保存设置</button>
+      <button id="reset" type="button" class="secondary">恢复默认</button>
+    </div>
+    <p id="status" class="status" role="status"></p>
+    <section class="reference">
+      <h2>网页内置功能</h2>
+      <ul>
+        <li>空格：显示答案</li>
+        <li>退格：上一个单词</li>
+        <li>1 / 2 / 3 / 4：认识 / 模糊 / 忘记 / 熟知</li>
+        <li>Alt+P：播放发音</li>
+      </ul>
+    </section>
+  </main>
+  <script src="../core/shortcut-utils.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

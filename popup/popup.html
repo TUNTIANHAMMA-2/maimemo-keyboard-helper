@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>墨墨网页快捷键</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>墨墨网页快捷键</h1>
+      <button id="open-options" type="button">设置</button>
+    </header>
+    <label class="toggle-row">
+      <input id="enabled" type="checkbox">
+      <span>启用快捷键</span>
+    </label>
+    <p id="status" class="status" role="status"></p>
+    <dl id="shortcut-list"></dl>
+    <p class="hint">仅在墨墨背单词网页版复习页面生效；输入框内不会拦截按键。</p>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

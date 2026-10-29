@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "墨墨网页快捷键",
+  "description": "为墨墨背单词网页版提供空格显示答案、认识/模糊/忘记/熟知快捷键和可配置按键。",
+  "version": "0.1.0",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.maimemo.com/*",
+    "https://tc-apis.maimemo.com/*"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "maimemo-keyboard-helper@local",
+      "strict_min_version": "109.0"
+    }
+  },
+  "action": {
+    "default_title": "墨墨网页快捷键",
+    "default_popup": "popup/popup.html"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.maimemo.com/home/web_study*",
+        "https://tc-apis.maimemo.com/webstudy/app*"
+      ],
+      "js": ["core/shortcut-utils.js", "content/maimemo-shortcuts.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

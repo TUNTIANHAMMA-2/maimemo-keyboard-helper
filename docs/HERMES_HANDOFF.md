@@ -39,9 +39,9 @@ npm run zip
 2. 项目所有者已确定项目自身采用 MIT License，根目录已增加 `LICENSE`；组件和官网图标仍分别按各自来源与权利说明处理。
 3. 官网猫头鹰图片来自 MaiMemo，使用者要求扩展在页面内保留原貌并进行位置复用；用户已确认它不作为 GitHub 仓库头像、仓库标识或项目自有 Logo。2026-10-30 已查阅官网《产品与服务使用协议》第 6.3 条；图片不属于项目自身 MIT 许可，公开发布时必须保留来源、用途和权利边界说明，不要修改本地原图后又声称是项目原创。详情见 `docs/brand-assets.md`。
 4. 对照 `git status --short` 检查待提交清单。不要提交 `node_modules`、生成目录、浏览器用户目录、账号信息、缓存或真实学习记录。测试夹具全部是模拟数据。
-5. 使用已确认的 GitHub 账号 `TUNTIANHAMMA-2`，仓库名 `maimemo-keyboard-helper`，公开可见，默认分支使用 `main`；创建仓库后添加 remote，再提交并推送完整源代码。
-6. 已生成并检查 `v0.3.1` Release 所需的两个 ZIP；发布后核对 Release URL、资产名称和下载可用性。公开源代码含锁文件与可重建组件源代码，不能只上传压缩包。
-7. 记录 GitHub URL、提交 hash、Release URL、各浏览器实测范围及未完成事项。扩展商店上架不在本次已完成范围内。
+5. 已使用 GitHub 账号 `TUNTIANHAMMA-2` 创建公开仓库 `maimemo-keyboard-helper`，默认分支为 `main`，远程地址为 `https://github.com/TUNTIANHAMMA-2/maimemo-keyboard-helper`。
+6. `v0.3.1` Release 已发布，包含 Firefox 与 Chromium 两个 ZIP；发布后已核对两个资产名称、大小和下载 URL。
+7. Release URL：`https://github.com/TUNTIANHAMMA-2/maimemo-keyboard-helper/releases/tag/v0.3.1`；Release 标签指向提交 `49701afe1a0e91d73c950bf3953ee72bc06e5557`。扩展商店上架不在本次已完成范围内。
 
 ## 本轮验证记录
 

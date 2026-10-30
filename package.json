@@ -1,12 +1,30 @@
 {
   "name": "maimemo-keyboard-helper",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
-  "description": "Firefox/Zen Browser keyboard shortcuts for MaiMemo web study.",
+  "description": "Keyboard shortcuts, focused study layout and themes for MaiMemo in Firefox, Zen, Chrome and Edge.",
+  "engines": { "node": ">=22.15.0" },
+  "dependencies": {
+    "liquid-glass-react": "1.1.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  },
   "scripts": {
-    "test": "node tests/shortcut-utils.test.mjs",
+    "build:glass": "node scripts/build-glass.mjs",
+    "build": "npm run build:glass && node scripts/build-extension.mjs",
+    "build:firefox": "npm run build:glass && node scripts/build-extension.mjs --target firefox",
+    "build:chromium": "npm run build:glass && node scripts/build-extension.mjs --target chromium",
+    "test": "node tests/shortcut-utils.test.mjs && node tests/settings.test.mjs && node tests/content-shortcuts.test.mjs && node tests/manifests.test.mjs",
+    "test:browser": "node tests/browser-smoke.test.mjs",
+    "test:browser:chromium": "node tests/browser-smoke.test.mjs --api chrome",
+    "test:extension": "node tests/chromium-extension.test.mjs",
     "check": "node scripts/check-syntax.mjs",
-    "zip": "node scripts/package-zip.mjs"
+    "zip": "npm run build:glass && node scripts/package-zip.mjs",
+    "zip:firefox": "npm run build:glass && node scripts/package-zip.mjs --target firefox",
+    "zip:chromium": "npm run build:glass && node scripts/package-zip.mjs --target chromium"
   }
 }

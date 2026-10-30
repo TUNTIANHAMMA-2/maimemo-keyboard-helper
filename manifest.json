@@ -1,12 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "墨墨网页快捷键",
-  "description": "为墨墨背单词网页版提供空格显示答案、认识/模糊/忘记/熟知快捷键和可配置按键。",
-  "version": "0.1.0",
+  "name": "墨墨学习助手",
+  "description": "墨墨网页版可配置快捷键、公测页自动进入、全屏净化、阅读卡片、三色操作按钮与明暗主题。",
+  "version": "0.3.1",
+  "icons": {
+    "48": "assets/maimemo-logo.png",
+    "96": "assets/maimemo-logo.png"
+  },
   "permissions": ["storage"],
   "host_permissions": [
-    "https://www.maimemo.com/*",
-    "https://tc-apis.maimemo.com/*"
+    "https://www.maimemo.com/home/web_study*",
+    "https://tc-apis.maimemo.com/webstudy/app*"
   ],
   "browser_specific_settings": {
     "gecko": {
@@ -15,7 +19,11 @@
     }
   },
   "action": {
-    "default_title": "墨墨网页快捷键",
+    "default_title": "墨墨学习助手",
+    "default_icon": {
+      "16": "assets/maimemo-logo.png",
+      "32": "assets/maimemo-logo.png"
+    },
     "default_popup": "popup/popup.html"
   },
   "options_ui": {
@@ -28,9 +36,16 @@
         "https://www.maimemo.com/home/web_study*",
         "https://tc-apis.maimemo.com/webstudy/app*"
       ],
-      "js": ["core/shortcut-utils.js", "content/maimemo-shortcuts.js"],
-      "run_at": "document_idle",
+      "css": ["content/maimemo-page.css", "core/liquid-glass.css"],
+      "js": ["core/shortcut-utils.js", "core/settings.js", "content/liquid-glass.js", "content/maimemo-page.js", "content/maimemo-shortcuts.js"],
+      "run_at": "document_start",
       "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/maimemo-logo.png"],
+      "matches": ["https://tc-apis.maimemo.com/*"]
     }
   ]
 }

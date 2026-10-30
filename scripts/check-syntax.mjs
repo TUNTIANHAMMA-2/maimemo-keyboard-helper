@@ -4,7 +4,7 @@ import { join, extname } from 'node:path';
 import { spawn } from 'node:child_process';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const ignored = new Set(['.git', 'node_modules']);
+const ignored = new Set(['.git', 'node_modules', 'dist', 'releases']);
 const extensions = new Set(['.js', '.mjs']);
 
 async function files(dir) {

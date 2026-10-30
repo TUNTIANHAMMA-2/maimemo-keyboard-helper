@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MaiMemo study fixture</title>
+  <style>
+    /* Minimal site-like layout. Synthetic data, no account or network requests. */
+    :root { font-size: 40px; --text-color-primary: #5d5d5d; --text-color-secondary: #8e8e8e; --text-color-title: #000; --bg-color-primary: #fff; --bg-color-secondary: #f7f7f7; --bg-color-review: #fff; --bg-color-group-line: #f7f7f7; --divider-color: #efefef; --theme-color: #36b59d; --resp-color-familiar: #36b59d; --resp-color-vague: #eb9e27; --resp-color-forget: #dc663e; }
+    body { margin: 0; font-family: system-ui, sans-serif; color: var(--text-color-primary); }
+    [hidden] { display: none !important; }
+    taro-view-core, taro-text-core { display: block; }
+    .taro_page { background: #fff !important; }
+    .home { display: flex; flex-direction: column; min-height: 100vh; max-width: 870px; margin: 0 auto; background: var(--bg-color-secondary); }
+    .home-content { flex: 1; overflow-y: auto; position: relative; }
+    .home-page { position: absolute; height: 100%; width: 100%; max-width: 870px; }
+    .container-height { box-sizing: border-box; min-height: calc(100vh + 24px); padding: 20px 12px; }
+    .taroify-tabbar { box-sizing: content-box; position: fixed; bottom: 0; display: flex; width: 870px; height: 75px; background: #fff; border-top: 1px solid #eee; }
+    .taroify-tabbar-item { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; font-size: 16px; color: #666; cursor: pointer; }
+    .taroify-tabbar-item__icon svg { width: 26px; height: 26px; }
+    .taroify-tabbar-item__label { margin-top: 6px; }
+    .taroify-tabbar-item--active { color: var(--theme-color); background: #fff; }
+    .rev-root { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg-color-review); }
+    .rev-top { background: linear-gradient(#477e91, #a0d5d0); }
+    .rev-top-stats { display: flex; align-items: center; gap: .3rem; opacity: .5; padding: .15rem .5625rem 0; font-size: .45rem; line-height: .45rem; color: var(--text-color-title); }
+    .rest { flex: 1; } .rev-top-stats svg { width: 22px; height: 22px; cursor: pointer; }
+    .rev-shortcut, .back { width: .6rem; height: .6rem; }
+    .rev-top .spelling { margin: .075rem 0 .225rem; text-align: center; font-size: 1.05rem; line-height: 1.2rem; color: var(--text-color-title); }
+    .rev-top > .phonetic { display: flex; align-items: center; justify-content: center; gap: .15rem; padding: 0 .6rem .6rem; }
+    .phonetic .accent { padding: .075rem .225rem; background: #0001; border-radius: .15rem; font-size: .375rem; }
+    .phonetic .phonetic { font-size: .525rem; }
+    .interp-ctn { padding: .3375rem .5625rem; border-top: 1px solid #ddd8; }
+    .interp-text { font-size: .5625rem; line-height: .7875rem; white-space: pre-line; color: var(--text-color-title); }
+    .rev-scroller { flex: 1; overflow-y: auto; padding-bottom: 3rem; }
+    .rev-content-header { padding: .15rem .5625rem; margin-bottom: .45rem; color: #aaa; border-bottom: 1px solid #efefef; font-size: .45rem; }
+    .rev-content-container { padding: 0 .5625rem; }
+    .rev-content-blank { height: .225rem; background: var(--bg-color-group-line); }
+    .phrase-root { position: relative; }
+    .phrase-phrase, .phrase-interpretation, .note-note { font-size: .5625rem; line-height: .7875rem; }
+    .phrase-phrase { margin-bottom: .225rem; } .phrase-interpretation { margin-bottom: .75rem; }
+    .phrase-hl { color: #ff3b30; } .phrase-play-btn { position: absolute; right: 0; top: .15rem; width: 20px; height: 20px; opacity: .65; }
+    .note-type { display: inline-block; background: var(--theme-color); color: #fff; border-radius: .15rem; padding: 0 .15rem; font-size: .375rem; }
+    .note-note { white-space: pre-line; } .dict-list { display: flex; gap: .375rem; } .dict-item { font-size: .525rem; }
+    .memo-history { color: var(--text-color-primary); font-size: .45rem; }
+    .history-title { display: block; margin-bottom: .15rem; }
+    .memo-history .items { display: flex; flex-wrap: wrap; gap: .15rem .075rem; }
+    .memo-history .item { height: .6rem; min-width: .6rem; padding: 0 .15rem; color: #fff; line-height: .6rem; opacity: .5; border-radius: .075rem; background: #aaa; }
+    .memo-history .history_familiar { background: #82c2ab; }
+    .rev-resp-btns { display: flex; padding: .375rem .5625rem; box-shadow: 0 -6px 9px #0001; border-radius: .3rem .3rem 0 0; }
+    .reset-button { margin: 0; padding: 0; border: 0; background: none; height: 1.575rem; line-height: 1.575rem; }
+    taro-button-core { cursor: pointer; font-size: .45rem !important; }
+    .reset-button::after { display: none; }
+    .rev-resp-btns .reset-button { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: .1875rem; color: #fff; font-size: .6rem; line-height: 1; border-radius: .15rem; }
+    .rev-resp-btns .reset-button:nth-child(1) { background: var(--resp-color-familiar); margin-right: .6rem; }
+    .rev-resp-btns .reset-button:nth-child(2) { background: var(--resp-color-vague); margin-right: .6rem; }
+    .rev-resp-btns .reset-button:nth-child(3) { background: var(--resp-color-forget); }
+    .predict { font-size: .3375rem; font-weight: 300; }
+    .rev-recall-mask { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-color-secondary); cursor: pointer; }
+    .hint-text :nth-child(1) { font-size: .6rem; } .hint-text :nth-child(2) { font-size: .45rem; }
+    .verify-input { position: fixed; top: 50%; left: 0; width: 100%; font-size: .9rem; } .hidden { display: none; }
+    .taro__toast { position: fixed; left: 40%; top: 45%; padding: 15px; background: #111; color: #fff; font-size: 15px; }
+  </style>
+</head>
+<body>
+<div id="app"><div class="taro_router"><div class="taro_page"><taro-view-core class="home"><taro-view-core class="home-content">
+<taro-view-core class="home-page" id="study-page"><taro-view-core class="container-height"><taro-view-core class="rev-root">
+  <taro-view-core class="rev-top">
+    <taro-view-core class="rev-top-stats">
+      <svg class="back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-label="返回"><path d="m14 5-7 7 7 7"/></svg>
+      <taro-text-core>18:44</taro-text-core><taro-text-core>57/300</taro-text-core><taro-view-core class="rest"></taro-view-core>
+      <svg class="rev-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-label="搜索"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg>
+      <taro-image-core class="rev-shortcut" id="well-familiar" aria-label="熟知"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h12v16M8 8h12v12M4 12h8M4 16h8M4 20h8"/></svg></taro-image-core>
+      <taro-image-core class="rev-shortcut" id="rev-top-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></taro-image-core>
+    </taro-view-core>
+    <taro-text-core class="spelling">serendipity</taro-text-core>
+    <taro-view-core class="phonetic"><taro-text-core class="accent">美</taro-text-core><taro-text-core class="phonetic">[ˌserənˈdɪpəti]</taro-text-core><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-label="发音"><path d="M4 9v6h4l5 4V5L8 9H4zM16 8q5 4 0 8M19 5q8 7 0 14"/></svg></taro-view-core>
+  </taro-view-core>
+  <taro-view-core class="rev-recall-mask hint-text"><taro-text-core>请回忆单词发音和释义</taro-text-core><taro-text-core>点击屏幕显示答案</taro-text-core></taro-view-core>
+  <input class="verify-input hidden" id="typing" aria-label="拼写输入">
+</taro-view-core></taro-view-core></taro-view-core>
+<taro-view-core class="home-page hidden" id="selection-page"><p>选词测试页面</p><input aria-label="选择词书"></taro-view-core>
+<taro-view-core class="home-page hidden" id="profile-page"><p>个人设置测试页面</p></taro-view-core>
+</taro-view-core>
+<div style="height:75px"><nav class="taroify-tabbar" aria-label="主导航">
+  <div class="taroify-tabbar-item taroify-tabbar-item--active" role="button" tabindex="0" data-tab="0"><div class="taroify-tabbar-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 5a9 9 0 1 1-2 9M5 2v5h5M12 7v5l4 2"/></svg></div><div class="taroify-tabbar-item__label">复习</div></div>
+  <div class="taroify-tabbar-item" role="button" tabindex="0" data-tab="1"><div class="taroify-tabbar-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 5h13v16H5zM8 2h13v16M5 8h13"/></svg></div><div class="taroify-tabbar-item__label">选词</div></div>
+  <div class="taroify-tabbar-item" role="button" tabindex="0" data-tab="2"><div class="taroify-tabbar-item__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg></div><div class="taroify-tabbar-item__label">我的</div></div>
+</nav></div>
+</taro-view-core></div></div></div>
+<div class="taro__toast">测试提示</div>
+<template id="definition"><taro-view-core class="interp-ctn"><taro-text-core class="interp-text">[名] 意外发现美好事物的运气；机缘巧合</taro-text-core></taro-view-core></template>
+<template id="answer">
+  <taro-view-core class="rev-scroller">
+    <taro-view-core class="rev-content-header">例句</taro-view-core>
+    <taro-view-core class="rev-content-container">
+      <taro-view-core class="phrase-root"><taro-text-core class="phrase-phrase">It was pure <span class="phrase-hl">serendipity</span> that we met.</taro-text-core><taro-text-core class="phrase-interpretation">我们的相遇，纯属机缘巧合。</taro-text-core><span class="phrase-play-btn">♪</span></taro-view-core>
+      <taro-view-core class="phrase-root"><taro-text-core class="phrase-phrase">A little <span class="phrase-hl">serendipity</span> can change your day.</taro-text-core><taro-text-core class="phrase-interpretation">一点不期而遇的美好，就能改变你的一天。</taro-text-core><span class="phrase-play-btn">♪</span></taro-view-core>
+      <taro-view-core class="phrase-root"><taro-text-core class="phrase-phrase">Leave room for <span class="phrase-hl">serendipity</span>.</taro-text-core><taro-text-core class="phrase-interpretation">为意外的惊喜留一点空间。</taro-text-core><span class="phrase-play-btn">♪</span></taro-view-core>
+    </taro-view-core>
+    <taro-view-core class="rev-content-blank"></taro-view-core><taro-view-core class="rev-content-header">助记</taro-view-core>
+    <taro-view-core class="rev-content-container"><taro-text-core class="note-type">联想</taro-text-core><taro-text-core class="note-note">一次偶然的发现，一份不期而遇的美好。</taro-text-core></taro-view-core>
+    <taro-view-core class="rev-content-blank"></taro-view-core><taro-view-core class="rev-content-header">词典</taro-view-core>
+    <taro-view-core class="rev-content-container"><taro-view-core class="dict-list"><taro-view-core class="dict-item">词义与用法</taro-view-core></taro-view-core></taro-view-core>
+    <!-- Synthetic history for layout/lifecycle tests; not a real study record. -->
+    <taro-view-core class="rev-content-blank"></taro-view-core><taro-view-core class="rev-content-header">记忆历史</taro-view-core>
+    <taro-view-core class="rev-content-container"><taro-view-core class="memo-history" id="native-memory-history">
+      <taro-text-core class="history-title">2026年1月2日 | 记忆 2 次</taro-text-core>
+      <taro-view-core class="items"><taro-view-core class="item history_familiar"><taro-text-core>D1 认识</taro-text-core></taro-view-core><taro-view-core class="item history_planning"><taro-text-core>规划 7 天后复习</taro-text-core></taro-view-core></taro-view-core>
+    </taro-view-core></taro-view-core>
+  </taro-view-core>
+  <taro-view-core class="rev-bottom"><taro-view-core class="rev-resp-btns">
+    <taro-button-core class="reset-button" data-feedback="familiar">认识<taro-text-core class="predict">7 天后</taro-text-core></taro-button-core>
+    <taro-button-core class="reset-button" data-feedback="vague">模糊<taro-text-core class="predict">今日 / 2 天后</taro-text-core></taro-button-core>
+    <taro-button-core class="reset-button" data-feedback="forget">忘记<taro-text-core class="predict">今日 / 1 天后</taro-text-core></taro-button-core>
+  </taro-view-core></taro-view-core>
+</template>
+<script>
+(() => {
+  const root = document.querySelector('.rev-root');
+  const top = document.querySelector('.rev-top');
+  const counts = { familiar: 0, vague: 0, forget: 0, wellFamiliar: 0, reveal: 0, menu: 0 };
+  let shown = false;
+  function recall() {
+    shown = false;
+    for (const node of root.querySelectorAll('.interp-ctn, .rev-scroller, .rev-bottom, .rev-recall-mask')) node.remove();
+    const mask = document.createElement('taro-view-core');
+    mask.className = 'rev-recall-mask hint-text';
+    mask.innerHTML = '<taro-text-core>请回忆单词发音和释义</taro-text-core><taro-text-core>点击屏幕显示答案</taro-text-core>';
+    mask.addEventListener('click', reveal);
+    root.insertBefore(mask, document.querySelector('#typing'));
+  }
+  function reveal() {
+    if (shown) return;
+    counts.reveal++;
+    shown = true;
+    root.querySelector('.rev-recall-mask')?.remove();
+    top.append(document.querySelector('#definition').content.cloneNode(true));
+    root.append(document.querySelector('#answer').content.cloneNode(true));
+    for (const button of root.querySelectorAll('[data-feedback]')) button.addEventListener('click', () => {
+      counts[button.dataset.feedback]++;
+      recall();
+    });
+  }
+  document.querySelector('.rev-recall-mask').addEventListener('click', reveal);
+  document.querySelector('#well-familiar').addEventListener('click', () => { if (shown) { counts.wellFamiliar++; recall(); } });
+  document.querySelector('#rev-top-menu').addEventListener('click', () => counts.menu++);
+  window.__fixture = { counts, reveal, recall };
+  window.__tabClicks = [0,0,0];
+  for (const tab of document.querySelectorAll('[data-tab]')) tab.addEventListener('click', () => {
+    const selected = Number(tab.dataset.tab);
+    window.__tabClicks[selected]++;
+    for (const [index, page] of [...document.querySelectorAll('.home-page')].entries()) page.classList.toggle('hidden', index !== selected);
+    for (const button of document.querySelectorAll('[data-tab]')) button.classList.toggle('taroify-tabbar-item--active', button === tab);
+  });
+  window.__nativeEvents = [];
+  for (const type of ['keydown', 'keyup']) document.addEventListener(type, (event) => {
+    window.__nativeEvents.push(`${type}:${event.key}`);
+    if (type !== 'keyup' || event.target.matches('input, textarea')) return;
+    if (event.key === ' ') reveal();
+    const action = { '1': 'familiar', '2': 'vague', '3': 'forget', '4': 'wellFamiliar' }[event.key];
+    if (action && shown) { counts[action]++; recall(); }
+  });
+})();
+</script>
+</body>
+</html>

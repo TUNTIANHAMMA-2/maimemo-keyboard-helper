@@ -1,52 +1,9 @@
+'use strict';
 const utils = globalThis.MaimemoShortcutUtils;
-const DEFAULTS = {
-  enabled: true,
-  shortcuts: { reveal: ' ', familiar: '1', vague: '2', forget: '3', wellFamiliar: '4' }
-};
-const labels = {
-  reveal: ['显示答案', '先显示当前单词释义'],
-  familiar: ['认识', '提交“认识”反馈'],
-  vague: ['模糊', '提交“模糊”反馈'],
-  forget: ['忘记', '提交“忘记”反馈'],
-  wellFamiliar: ['熟知', '提交“熟知”反馈']
-};
-const actions = Object.keys(labels);
+const config = globalThis.MaimemoSettings;
+const descriptions = { reveal: '先显示当前单词释义', familiar: '认识 · 绿色按钮', vague: '模糊 · 黄色按钮', forget: '忘记 · 红色按钮', wellFamiliar: '熟知 · 原网页顶部操作' };
+const flags = ['cleanPage', 'hideToasts', 'redesign', 'trafficLights'];
 let settings;
-
-function readSettings(value) {
-  return {
-    enabled: value?.enabled !== false,
-    shortcuts: { ...DEFAULTS.shortcuts, ...(value?.shortcuts ?? {}) }
-  };
-}
-
-function render() {
-  document.querySelector('#enabled').checked = settings.enabled;
-  document.querySelector('#shortcut-fields').innerHTML = `<div class="fields">${actions.map((action) => `
-    <div class="field">
-      <label for="shortcut-${action}">${labels[action][0]}<small>${labels[action][1]}</small></label>
-      <input id="shortcut-${action}" type="text" autocomplete="off" spellcheck="false" value="${escapeHtml(settings.shortcuts[action])}" aria-label="${labels[action][0]}快捷键">
-    </div>`).join('')}</div>`;
-  for (const action of actions) {
-    document.querySelector(`#shortcut-${action}`).addEventListener('keydown', (event) => {
-      if (['Tab', 'Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
-      event.preventDefault();
-      const formatted = utils.formatEventShortcut(event);
-      if (formatted) event.currentTarget.value = formatted;
-    });
-  }
-}
-
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-}
-
-function collect() {
-  return {
-    enabled: document.querySelector('#enabled').checked,
-    shortcuts: Object.fromEntries(actions.map((action) => [action, document.querySelector(`#shortcut-${action}`).value]))
-  };
-}
 
 function setStatus(message, error = false) {
   const node = document.querySelector('#status');
@@ -54,28 +11,84 @@ function setStatus(message, error = false) {
   node.classList.toggle('error', error);
 }
 
+function render() {
+  document.querySelector('#enabled').checked = settings.enabled;
+  document.querySelector('#autoStart').checked = settings.autoStart;
+  for (const flag of flags) document.querySelector(`#${flag}`).checked = settings.appearance[flag];
+  document.querySelector('#theme').value = settings.appearance.theme;
+  document.documentElement.dataset.theme = settings.appearance.theme;
+  const container = document.querySelector('#shortcut-fields');
+  container.replaceChildren();
+  for (const action of config.ACTIONS) {
+    const row = document.createElement('div');
+    row.className = 'field';
+    const label = document.createElement('label');
+    label.htmlFor = `shortcut-${action}`;
+    label.textContent = config.LABELS[action];
+    const description = document.createElement('small');
+    description.textContent = descriptions[action];
+    label.append(description);
+    const input = document.createElement('input');
+    input.id = label.htmlFor;
+    input.type = 'text';
+    input.readOnly = true;
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.value = settings.shortcuts[action];
+    input.setAttribute('aria-label', `${config.LABELS[action]}快捷键`);
+    input.addEventListener('keydown', (event) => {
+      if (event.isComposing || event.keyCode === 229 || event.key === 'Process') {
+        setStatus('录制字母快捷键时，请先切换为英文输入模式。', true);
+        return;
+      }
+      if (['Tab', 'Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
+      event.preventDefault();
+      const formatted = utils.formatEventShortcut(event);
+      if (formatted) input.value = formatted;
+    });
+    row.append(label, input);
+    container.append(row);
+  }
+}
+
+function collect() {
+  return config.normalize({
+    enabled: document.querySelector('#enabled').checked,
+    autoStart: document.querySelector('#autoStart').checked,
+    appearance: { ...Object.fromEntries(flags.map((flag) => [flag, document.querySelector(`#${flag}`).checked])), theme: document.querySelector('#theme').value },
+    shortcuts: Object.fromEntries(config.ACTIONS.map((action) => [action, document.querySelector(`#shortcut-${action}`).value]))
+  });
+}
+
+document.querySelector('#theme').addEventListener('change', (event) => {
+  document.documentElement.dataset.theme = event.target.value;
+});
 document.querySelector('#save').addEventListener('click', async () => {
   const next = collect();
   const duplicates = utils.findDuplicateShortcuts(next.shortcuts);
   if (duplicates.length) {
-    setStatus(`快捷键重复：${duplicates.map((group) => group.join('、')).join('；')}`, true);
+    setStatus(`快捷键重复：${duplicates.map((group) => group.map((action) => config.LABELS[action]).join('、')).join('；')}`, true);
     return;
   }
-  next.shortcuts = Object.fromEntries(actions.map((action) => [action, utils.canonicalizeShortcut(next.shortcuts[action])]));
-  await browser.storage.local.set({ maimemoKeyboardSettings: next });
-  settings = readSettings(next);
-  render();
-  setStatus('设置已保存。');
+  const save = document.querySelector('#save');
+  save.disabled = true;
+  try {
+    settings = await config.update(next);
+    render();
+    setStatus('已保存，打开的学习页会自动应用。');
+  } catch { setStatus('保存失败，请重试。', true); }
+  finally { save.disabled = false; }
 });
-
 document.querySelector('#reset').addEventListener('click', () => {
-  settings = readSettings(DEFAULTS);
+  settings = config.normalize();
   render();
   setStatus('已恢复默认值，点击“保存设置”后生效。');
 });
-
 (async () => {
-  const stored = await browser.storage.local.get('maimemoKeyboardSettings');
-  settings = readSettings(stored.maimemoKeyboardSettings);
-  render();
+  try {
+    settings = await config.read();
+    render();
+    document.querySelector('#save').disabled = false;
+    document.querySelector('#reset').disabled = false;
+  } catch { setStatus('设置读取失败，请重新打开此页。', true); }
 })();

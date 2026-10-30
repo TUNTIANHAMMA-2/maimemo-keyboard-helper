@@ -25,12 +25,14 @@ assert.equal(utils.normalizeKey('Esc'), 'Escape');
 assert.equal(utils.canonicalizeShortcut('ctrl+alt+q'), 'Ctrl+Alt+Q');
 assert.equal(utils.canonicalizeShortcut(' Shift + space '), 'Shift+Space');
 assert.equal(utils.canonicalizeShortcut(''), '');
+assert.equal(utils.canonicalizeShortcut(' '), 'Space');
 
 const altQ = { key: 'q', altKey: true, ctrlKey: false, shiftKey: false, metaKey: false };
 assert.equal(utils.matchShortcut(altQ, 'Alt+Q'), true);
 assert.equal(utils.matchShortcut({ ...altQ, altKey: false }, 'Alt+Q'), false);
 assert.equal(utils.matchShortcut({ key: 'Q', altKey: true, ctrlKey: false, shiftKey: false, metaKey: false }, 'Alt+Q'), true);
 assert.equal(utils.matchShortcut({ key: ' ', altKey: false, ctrlKey: false, shiftKey: false, metaKey: false }, 'Space'), true);
+assert.equal(utils.matchShortcut({ key: ' ' }, ' '), true);
 
 assert.deepEqual(utils.formatEventShortcut({ key: 'r', altKey: true, ctrlKey: false, shiftKey: true, metaKey: false }), 'Alt+Shift+R');
 assert.equal(utils.formatEventShortcut({ key: 'Alt', altKey: true, ctrlKey: false, shiftKey: false, metaKey: false }), null);

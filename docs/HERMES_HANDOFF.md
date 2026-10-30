@@ -1,0 +1,55 @@
+# Hermes 接管与 GitHub 发布交接
+
+日期：2026-10-30。版本：0.3.1。以当前工作树为完整开发源，不以旧 ZIP 或初始 Git 提交代替。
+
+## 先读哪些文件
+
+1. `AGENTS.md`：协作、权限、数据与验证规则。
+2. `README.md`：用户功能、双版本安装和常用命令。
+3. `docs/PROJECT.md`：架构、已实现内容、验证边界和下一步。
+4. `CONTRIBUTING.md` 与 `CHANGELOG.md`：开发流程和版本变更。
+5. `docs/brand-assets.md`、`docs/integrated-userscripts.md`、`docs/liquid-glass.md`、`docs/third-party-licenses.txt`：第三方来源与许可。
+
+## 接管时的 Git 状态
+
+- 本次接管前仅有初始提交 `697cab8`（`feat: add MaiMemo keyboard helper extension`）。
+- 当前本地分支为 `master`；是否在首次公开时改为 `main` 由维护者决定。
+- 已核实没有配置 Git 远程仓库；本轮没有创建 GitHub 仓库、推送提交或发布 Release。
+- 工作树含大量已修改及尚未跟踪的新文件，包括外观、设置、玻璃组件、测试和文档。必须同时检查 `git diff` 与 `git status --short`，不能仅看已跟踪文件的 diff。
+- 不执行 `git reset --hard` 或 `git clean` 丢弃现有成果。`package.json` 的 `private: true` 仅防止意外发布到 npm，不妨碍 GitHub 公开仓库。
+
+## 构建和交付
+
+需要 Node.js 22.15+。在仓库根目录运行：
+
+```sh
+npm ci --ignore-scripts
+npm test
+npm run check
+npm run build
+npm run zip
+```
+
+生成目录为 `dist/firefox`、`dist/chromium`；生成包为 `releases/maimemo-keyboard-helper-firefox-0.3.1.zip` 和 `releases/maimemo-keyboard-helper-chromium-0.3.1.zip`。Chrome 与 Edge 载入同一个 Chromium 目录，不能直接将 ZIP 拖入浏览器作为商店安装包。
+
+`dist` 与 `releases` 已忽略，不提交 Git。源码、`package-lock.json`、`ui/liquid-glass-entry.js`、预编译的 `content/liquid-glass.js`、图标和第三方说明都属于项目文件。修改玻璃源代码后必须重新构建。根目录 `manifest.json` 保留 Firefox 身份，Chromium 清单由脚本自动派生。
+
+## 发布前的具体工作
+
+1. 审核整个工作树并完成本地测试，包含新的未跟踪文件。浏览器命令见 `CONTRIBUTING.md`。
+2. 项目所有者已确定项目自身采用 MIT License，根目录已增加 `LICENSE`；组件和官网图标仍分别按各自来源与权利说明处理。
+3. 官网猫头鹰图片来自 MaiMemo，使用者要求扩展在页面内保留原貌并进行位置复用；用户已确认它不作为 GitHub 仓库头像、仓库标识或项目自有 Logo。2026-10-30 已查阅官网《产品与服务使用协议》第 6.3 条；图片不属于项目自身 MIT 许可，公开发布时必须保留来源、用途和权利边界说明，不要修改本地原图后又声称是项目原创。详情见 `docs/brand-assets.md`。
+4. 对照 `git status --short` 检查待提交清单。不要提交 `node_modules`、生成目录、浏览器用户目录、账号信息、缓存或真实学习记录。测试夹具全部是模拟数据。
+5. 使用已确认的 GitHub 账号 `TUNTIANHAMMA-2`，仓库名 `maimemo-keyboard-helper`，公开可见，默认分支使用 `main`；创建仓库后添加 remote，再提交并推送完整源代码。
+6. 发布 `v0.3.1` Release，附两个 ZIP 和变更说明。公开源代码必须含锁文件与可重建组件源代码，不能只上传压缩包。
+7. 记录 GitHub URL、提交 hash、Release URL、各浏览器实测范围及未完成事项。扩展商店上架不在本次已完成范围内。
+
+## 本轮验证记录
+
+- 单元测试已覆盖 `browser` / `chrome` 设置、快捷键以及双版本清单和权限一致性。
+- 两种 API 的完整模拟浏览器回归均已通过，包含 320 / 390 / 800 / 1440 / 1880 像素布局、记忆历史、输入保护与路由恢复。
+- 在原生 Chromium 145.0.7632.6 中成功加载 Chromium 目录，验证了真实扩展 API、持久化设置、`storage.onChanged`、CSP、本地图标与组件、自动注入、快捷键和打开设置页。
+- 浏览器测试使用本地模拟页面，不访问现有浏览器用户目录，不登录墨墨，也不提交真实学习记录。
+- Google Chrome、Microsoft Edge、Firefox / Zen 的真实账号学习页仍需人工复核。不要把 Chromium 自动化或 Firefox 用户代理模拟称作所有品牌浏览器已实测。
+
+交接文档记录的是 2026-10-30 的本地状态。接管后请先复核当前 Git 与版本状态，再把新的验收结果写入版本记录。

@@ -1,37 +1,47 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-mm-ui="options">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>墨墨网页快捷键设置</title>
+  <title>墨墨学习助手 · 偏好设置</title>
+  <link rel="stylesheet" href="../core/ui.css">
+  <link rel="stylesheet" href="../core/liquid-glass.css">
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <main>
-    <h1>墨墨网页快捷键</h1>
-    <p class="intro">配置墨墨背单词网页版复习时的键盘操作。默认与网页内置快捷键一致。</p>
-    <label class="toggle-row"><input id="enabled" type="checkbox"> 启用快捷键</label>
+    <header class="brand">
+      <img class="brand-mark" src="../assets/maimemo-logo.png" width="40" height="40" alt="" aria-hidden="true">
+      <div><p class="eyebrow">MAIMEMO / PREFERENCES</p><h1>墨墨学习助手</h1></div>
+    </header>
+    <p class="intro">把注意力留给单词，让复习回到舒服的节奏。</p>
     <section>
-      <h2>按键映射</h2>
-      <p class="hint">点击输入框后按一个键或组合键，再点击保存。空格会显示为 Space。</p>
+      <div class="section-heading"><span class="section-number">01</span><h2>页面外观</h2></div>
+      <label class="theme-row" for="theme"><span>显示主题<small>学习页右上角也可以快速切换</small></span>
+        <select id="theme"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select>
+      </label>
+      <label class="switch-row"><span><strong>阅读卡片</strong><small>重排单词、释义和例句，适配宽屏与窄屏</small></span><input id="redesign" type="checkbox"></label>
+      <label class="switch-row"><span><strong>三色操作按钮</strong><small>左上角红 / 黄 / 绿分别是忘记 / 模糊 / 认识；悬停显示当前快捷键和复习间隔</small></span><input id="trafficLights" type="checkbox"></label>
+      <div class="traffic-preview" aria-hidden="true"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span>同样的操作，更轻巧的入口</span></div>
+    </section>
+    <section>
+      <div class="section-heading"><span class="section-number">02</span><h2>专注学习</h2></div>
+      <label class="switch-row"><span><strong>自动进入学习</strong><small>自动勾选公测说明页的“我已阅读”，然后点击“开始学习”</small></span><input id="autoStart" type="checkbox"></label>
+      <label class="switch-row"><span><strong>学习区铺满窗口</strong><small>隐藏官网顶部导航和页脚，仅在学习 iframe 存在时生效</small></span><input id="cleanPage" type="checkbox"></label>
+      <label class="switch-row"><span><strong>隐藏浮动提示</strong><small>隐藏 Taro toast；网站的错误对话框和确认弹窗仍正常显示</small></span><input id="hideToasts" type="checkbox"></label>
+    </section>
+    <section>
+      <div class="section-heading"><span class="section-number">03</span><h2>键盘操作</h2></div>
+      <label class="switch-row"><span><strong>启用自定义快捷键</strong><small>认识、模糊、忘记和熟知都需要先显示答案</small></span><input id="enabled" type="checkbox"></label>
+      <p class="hint">点击右侧输入框，按下单键或组合键。录制字母时请使用英文输入模式。</p>
       <div id="shortcut-fields"></div>
     </section>
-    <div class="actions">
-      <button id="save" type="button">保存设置</button>
-      <button id="reset" type="button" class="secondary">恢复默认</button>
-    </div>
-    <p id="status" class="status" role="status"></p>
-    <section class="reference">
-      <h2>网页内置功能</h2>
-      <ul>
-        <li>空格：显示答案</li>
-        <li>退格：上一个单词</li>
-        <li>1 / 2 / 3 / 4：认识 / 模糊 / 忘记 / 熟知</li>
-        <li>Alt+P：播放发音</li>
-      </ul>
-    </section>
+    <div class="actions"><button id="save" type="button" class="primary" disabled>保存设置</button><button id="reset" type="button" disabled>恢复默认</button><p id="status" class="status" role="status" aria-live="polite"></p></div>
+    <footer>设置保存在本机浏览器。输入框与拼写输入中不会拦截快捷键。</footer>
   </main>
   <script src="../core/shortcut-utils.js"></script>
+  <script src="../core/settings.js"></script>
   <script src="options.js"></script>
+  <script src="../content/liquid-glass.js"></script>
 </body>
 </html>

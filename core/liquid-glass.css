@@ -1,0 +1,68 @@
+/* Visual layers rendered by the actual liquid-glass-react component. */
+:root {
+  --lg-fill: rgb(255 255 255 / 58%);
+  --lg-fill-strong: rgb(255 255 255 / 80%);
+  --lg-pressed: rgb(228 238 244 / 82%);
+  --lg-border: rgb(255 255 255 / 72%);
+  --lg-shadow: 0 8px 28px rgb(33 60 79 / 9%);
+  --lg-shadow-soft: 0 3px 12px rgb(33 60 79 / 7%);
+  --lg-workspace: radial-gradient(ellipse at 93% 3%, #c4e2ed80, transparent 55%), radial-gradient(ellipse at 62% 96%, #d6e6f280, transparent 50%), #edf2f7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mm-theme="light"]):not([data-theme="light"]) {
+    --lg-fill: rgb(27 36 47 / 55%);
+    --lg-fill-strong: rgb(34 44 57 / 85%);
+    --lg-pressed: rgb(44 59 74 / 90%);
+    --lg-border: rgb(225 244 255 / 18%);
+    --lg-shadow: 0 8px 28px rgb(0 0 0 / 20%);
+    --lg-shadow-soft: 0 3px 12px rgb(0 0 0 / 13%);
+    --lg-workspace: radial-gradient(ellipse at 93% 3%, #25455580, transparent 55%), radial-gradient(ellipse at 62% 96%, #273a5380, transparent 50%), #131b25;
+  }
+}
+:root[data-mm-theme="dark"], :root[data-theme="dark"] {
+  --lg-fill: rgb(27 36 47 / 55%);
+  --lg-fill-strong: rgb(34 44 57 / 85%);
+  --lg-pressed: rgb(44 59 74 / 90%);
+  --lg-border: rgb(225 244 255 / 18%);
+  --lg-shadow: 0 8px 28px rgb(0 0 0 / 20%);
+  --lg-shadow-soft: 0 3px 12px rgb(0 0 0 / 13%);
+  --lg-workspace: radial-gradient(ellipse at 93% 3%, #25455580, transparent 55%), radial-gradient(ellipse at 62% 96%, #273a5380, transparent 50%), #131b25;
+}
+[data-mm-liquid-surface] { isolation: isolate; background: transparent !important; }
+:is(.rev-scroller, .interp-ctn, #mm-memory-history, .taroify-tabbar-item, button, main > section)[data-mm-liquid-surface] { position: relative; }
+[data-mm-liquid-surface="definition"], [data-mm-liquid-surface="history"] { --lg-fill: rgb(255 255 255 / 16%); --lg-border: rgb(255 255 255 / 32%); }
+button.primary[data-mm-liquid-surface] { --lg-fill: rgb(35 48 62 / 90%); --lg-fill-strong: rgb(35 48 62 / 98%); color: #fff; }
+:root[data-mm-theme="dark"] :is([data-mm-liquid-surface="definition"], [data-mm-liquid-surface="history"]) { --lg-fill: rgb(6 28 37 / 20%); }
+.mm-liquid-mount {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--lg-fill);
+  backdrop-filter: blur(10px) saturate(1.12);
+  pointer-events: none !important;
+}
+.mm-liquid-mount * { pointer-events: none !important; }
+.mm-liquid-mount > * { box-sizing: border-box; transition-property: opacity, box-shadow !important; }
+/* Keep the upstream optical layer subtle on large reading surfaces. */
+.mm-liquid-mount .glass__warp { opacity: .12; }
+.mm-liquid-mount .mm-liquid-surface > .glass { box-sizing: border-box; width: 100%; height: 100%; display: block !important; box-shadow: none !important; }
+/* Scoped utilities used by upstream; no global Tailwind dependency. */
+.mm-liquid-mount .relative { position: relative; }
+.mm-liquid-mount .bg-black { background: #000; }
+.mm-liquid-mount .opacity-0 { opacity: 0; }
+.mm-liquid-mount .opacity-20 { opacity: .2; }
+.mm-liquid-mount .opacity-100 { opacity: 1; }
+.mm-liquid-mount .mix-blend-overlay { mix-blend-mode: overlay; }
+@media (prefers-reduced-motion: reduce) { .mm-liquid-mount * { transition: none !important; } }
+@media (prefers-reduced-transparency: reduce) {
+  .mm-liquid-mount { background: var(--lg-fill-strong); backdrop-filter: none; }
+  .mm-liquid-mount .glass__warp { backdrop-filter: none !important; filter: none !important; }
+}
+@media (forced-colors: active) {
+  .mm-liquid-mount { display: none; }
+  [data-mm-liquid-surface] { background: Canvas !important; border-color: CanvasText !important; box-shadow: none !important; }
+}

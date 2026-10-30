@@ -1,41 +1,42 @@
-const DEFAULTS = {
-  enabled: true,
-  shortcuts: { reveal: ' ', familiar: '1', vague: '2', forget: '3', wellFamiliar: '4' }
-};
-const labels = {
-  reveal: '显示答案', familiar: '认识', vague: '模糊', forget: '忘记', wellFamiliar: '熟知'
-};
+'use strict';
+const config = globalThis.MaimemoSettings;
+const extensionAPI = globalThis.browser ?? globalThis.chrome;
+const themeButtons = [...document.querySelectorAll('[data-theme-value]')];
 
-function displayShortcut(value) {
-  return value === ' ' ? 'Space' : value || '未设置';
+function status(message, error = false) {
+  const node = document.querySelector('#status');
+  node.textContent = message;
+  node.classList.toggle('error', error);
 }
 
-async function getSettings() {
-  const stored = await browser.storage.local.get('maimemoKeyboardSettings');
-  return {
-    enabled: stored.maimemoKeyboardSettings?.enabled !== false,
-    shortcuts: { ...DEFAULTS.shortcuts, ...(stored.maimemoKeyboardSettings?.shortcuts ?? {}) }
-  };
-}
-
-async function save(settings) {
-  await browser.storage.local.set({ maimemoKeyboardSettings: settings });
-}
-
-async function render() {
-  const settings = await getSettings();
+function render(settings) {
+  document.documentElement.dataset.theme = settings.appearance.theme;
   document.querySelector('#enabled').checked = settings.enabled;
-  document.querySelector('#shortcut-list').innerHTML = Object.entries(settings.shortcuts)
-    .map(([action, shortcut]) => `<div><dt>${labels[action]}</dt><dd>${displayShortcut(shortcut)}</dd></div>`)
-    .join('');
+  document.querySelector('#enabled').disabled = false;
+  for (const button of themeButtons) button.setAttribute('aria-pressed', String(button.dataset.themeValue === settings.appearance.theme));
+  const list = document.querySelector('#shortcut-list');
+  list.replaceChildren();
+  for (const action of config.ACTIONS) {
+    const row = document.createElement('div');
+    const term = document.createElement('dt');
+    term.textContent = config.LABELS[action];
+    const description = document.createElement('dd');
+    const key = document.createElement('kbd');
+    key.textContent = settings.shortcuts[action] || '未设置';
+    description.append(key);
+    row.append(term, description);
+    list.append(row);
+  }
 }
 
-document.querySelector('#enabled').addEventListener('change', async (event) => {
-  const settings = await getSettings();
-  settings.enabled = event.target.checked;
-  await save(settings);
-  document.querySelector('#status').textContent = event.target.checked ? '已启用' : '已停用';
-});
-
-document.querySelector('#open-options').addEventListener('click', () => browser.runtime.openOptionsPage());
-render();
+async function update(patch) {
+  try {
+    render(await config.update(patch));
+    status('已保存，学习页会自动应用。');
+  } catch { status('保存失败，请重试。', true); }
+}
+document.querySelector('#enabled').addEventListener('change', (event) => update({ enabled: event.target.checked }));
+for (const button of themeButtons) button.addEventListener('click', () => update({ appearance: { theme: button.dataset.themeValue } }));
+document.querySelector('#open-options').addEventListener('click', () => extensionAPI.runtime.openOptionsPage());
+config.watch(render);
+config.read().then(render).catch(() => status('设置读取失败，请重新打开。', true));

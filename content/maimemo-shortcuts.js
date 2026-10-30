@@ -4,44 +4,25 @@
   const utils = globalThis.MaimemoShortcutUtils;
   if (!utils) return;
 
-  const HOST = 'maimemo-keyboard-helper';
-  const DEFAULTS = Object.freeze({
-    enabled: true,
-    shortcuts: {
-      reveal: ' ',
-      familiar: '1',
-      vague: '2',
-      forget: '3',
-      wellFamiliar: '4'
-    }
-  });
-  const ACTIONS = ['reveal', 'familiar', 'vague', 'forget', 'wellFamiliar'];
-  const ACTION_LABELS = {
-    reveal: '显示答案',
-    familiar: '认识',
-    vague: '模糊',
-    forget: '忘记',
-    wellFamiliar: '熟知'
-  };
+  const config = globalThis.MaimemoSettings;
+  if (!config) return;
+  const ACTIONS = config.ACTIONS;
 
   const state = {
-    settings: structuredClone(DEFAULTS),
-    observer: null,
-    keyHandler: null,
-    routeTimer: null,
-    lastRoute: location.href,
-    pendingClicks: new Set(),
-    suppressedKeyups: new Set(),
+    settings: config.normalize(),
+    attached: false,
+    pressedKeys: new Set(),
     settingsReady: false
   };
 
   function isStudyPage() {
-    return location.hash.includes('/pages/home/index') || document.querySelector('.rev-root');
+    return location.hash.split('?')[0] === '#/pages/home/index';
   }
 
   function isEditableTarget(target) {
     if (!(target instanceof Element)) return false;
-    return target.matches('input, textarea, select, [contenteditable="true"], [contenteditable=""]')
+    return target.isContentEditable
+      || target.matches('input, textarea, select, [contenteditable="true"], [contenteditable=""]')
       || Boolean(target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]'));
   }
 
@@ -54,13 +35,16 @@
 
   function visible(element) {
     if (!element) return false;
+    if (element.closest('[hidden], [aria-hidden="true"]')) return false;
     const style = getComputedStyle(element);
     const rect = element.getBoundingClientRect();
     return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
   }
 
   function clickElement(element) {
-    if (!element || !visible(element)) return false;
+    if (!element || typeof element.click !== 'function' || !visible(element) || element.disabled
+      || (element.hasAttribute('disabled') && element.getAttribute('disabled') !== 'false')
+      || element.getAttribute('aria-disabled') === 'true') return false;
     element.click();
     return true;
   }
@@ -78,7 +62,9 @@
   }
 
   function clickWellFamiliar() {
-    const shortcut = document.querySelector('.rev-shortcut');
+    // The menu shares this class. It must never be used as a review action.
+    if (!visible(document.querySelector('.rev-resp-btns'))) return false;
+    const shortcut = document.querySelector('.rev-shortcut:not(#rev-top-menu)');
     return clickElement(shortcut);
   }
 
@@ -98,58 +84,56 @@
     return false;
   }
 
-  function onKeyUp(event) {
-    if (!state.settingsReady || event.isComposing || isEditableTarget(event.target)) return;
-    const action = currentAction(event);
-    if (!action) return;
-    if (isStudyPage()) {
-      runAction(action);
-      event.preventDefault();
-      event.stopPropagation();
-    }
+  function isTyping(event) {
+    return event.isComposing || event.keyCode === 229
+      || event.composedPath().some(isEditableTarget);
   }
 
-  function normalizeSettings(input) {
-    const shortcuts = { ...DEFAULTS.shortcuts, ...(input?.shortcuts ?? {}) };
-    return {
-      enabled: input?.enabled !== false,
-      shortcuts: Object.fromEntries(ACTIONS.map((action) => [action, String(shortcuts[action] ?? DEFAULTS.shortcuts[action])]))
-    };
+  function suppress(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  function onKeyDown(event) {
+    if (!state.settingsReady || !state.settings.enabled || isTyping(event) || !isStudyPage()) return;
+    const action = currentAction(event);
+    if (!action) return;
+    // Claim keydown before the site's letter-to-spelling listener.
+    // Also consume keyup so its built-in shortcuts cannot submit again.
+    suppress(event);
+    const key = event.code || event.key;
+    if (event.repeat || state.pressedKeys.has(key)) return;
+    state.pressedKeys.add(key);
+    runAction(action);
+  }
+
+  function onKeyUp(event) {
+    if (!state.pressedKeys.delete(event.code || event.key)) return;
+    suppress(event);
   }
 
   async function loadSettings() {
     try {
-      const stored = await browser.storage.local.get('maimemoKeyboardSettings');
-      state.settings = normalizeSettings(stored.maimemoKeyboardSettings);
+      state.settings = await config.read();
     } catch {
-      state.settings = structuredClone(DEFAULTS);
+      state.settings = config.normalize();
     }
     state.settingsReady = true;
   }
 
   function attach() {
-    if (state.keyHandler) return;
-    state.keyHandler = onKeyUp;
-    document.addEventListener('keyup', state.keyHandler, true);
-  }
-
-  function watchRoute() {
-    if (state.lastRoute === location.href) return;
-    state.lastRoute = location.href;
-    window.clearTimeout(state.routeTimer);
-    state.routeTimer = window.setTimeout(attach, 0);
+    if (state.attached) return;
+    state.attached = true;
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('keyup', onKeyUp, true);
+    window.addEventListener('blur', () => state.pressedKeys.clear());
   }
 
   function init() {
     attach();
-    state.observer = new MutationObserver(watchRoute);
-    state.observer.observe(document.documentElement, { childList: true, subtree: true });
-    window.addEventListener('hashchange', watchRoute, true);
+    window.addEventListener('hashchange', () => state.pressedKeys.clear());
     loadSettings();
-    browser.storage?.onChanged?.addListener((changes, area) => {
-      if (area !== 'local' || !changes.maimemoKeyboardSettings) return;
-      state.settings = normalizeSettings(changes.maimemoKeyboardSettings.newValue);
-    });
+    config.watch((settings) => { state.settings = settings; });
   }
 
   init();

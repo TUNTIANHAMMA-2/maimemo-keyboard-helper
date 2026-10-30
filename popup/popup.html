@@ -1,25 +1,26 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-mm-ui="popup">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>墨墨网页快捷键</title>
+  <title>墨墨学习助手</title>
+  <link rel="stylesheet" href="../core/ui.css">
+  <link rel="stylesheet" href="../core/liquid-glass.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <main>
-    <header>
-      <h1>墨墨网页快捷键</h1>
-      <button id="open-options" type="button">设置</button>
-    </header>
-    <label class="toggle-row">
-      <input id="enabled" type="checkbox">
-      <span>启用快捷键</span>
-    </label>
-    <p id="status" class="status" role="status"></p>
+    <header><div class="brand"><img class="brand-mark" src="../assets/maimemo-logo.png" width="36" height="36" alt="" aria-hidden="true"><div><p class="eyebrow">MAIMEMO HELPER</p><h1>墨墨学习助手</h1></div></div><button id="open-options" type="button">设置</button></header>
+    <p class="caption">专注眼前的这一个单词。</p>
+    <div class="theme-picker" role="group" aria-label="显示主题"><button data-theme-value="system" type="button" aria-pressed="false">◐ 跟随系统</button><button data-theme-value="light" type="button" aria-pressed="false">☀ 浅色</button><button data-theme-value="dark" type="button" aria-pressed="false">☾ 深色</button></div>
+    <label class="switch-row"><span><strong>键盘快捷键</strong></span><input id="enabled" type="checkbox" disabled></label>
     <dl id="shortcut-list"></dl>
-    <p class="hint">仅在墨墨背单词网页版复习页面生效；输入框内不会拦截按键。</p>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <footer><div class="traffic-preview" aria-hidden="true"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div><p class="hint">忘记 / 模糊 / 认识<br>悬停圆点查看快捷键与复习间隔</p></footer>
   </main>
+  <script src="../core/shortcut-utils.js"></script>
+  <script src="../core/settings.js"></script>
   <script src="popup.js"></script>
+  <script src="../content/liquid-glass.js"></script>
 </body>
 </html>

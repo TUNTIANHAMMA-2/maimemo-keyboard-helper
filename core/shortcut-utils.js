@@ -52,6 +52,7 @@
 
   function canonicalizeShortcut(shortcut) {
     if (shortcut == null) return '';
+    if (shortcut === ' ') return 'Space';
     const parts = String(shortcut)
       .split('+')
       .map((part) => part.trim())

@@ -5,7 +5,7 @@
 - 增加 Chrome / Edge Chromium 构建，保留 Firefox / Zen 版本；设置和运行时操作支持 `browser` 与 `chrome` API。
 - 共用源代码，生成独立清单、安装目录和 ZIP；打包改用 Node 标准库，移除 PowerShell 依赖。
 - 增加双清单权限检查、Chrome API 模拟回归和真实 Chromium 扩展载入测试。
-- 整理项目总览、Hermes 接管说明、开发流程和首次 GitHub 发布待办。
+- 完成公开 GitHub 仓库首个完整源码提交，包含锁文件、MIT License、构建脚本、双版本测试和第三方资源说明。
 
 ## 0.3.0 — 2026-10-30
 

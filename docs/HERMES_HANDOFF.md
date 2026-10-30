@@ -12,11 +12,10 @@
 
 ## 接管时的 Git 状态
 
-- 本次接管前仅有初始提交 `697cab8`（`feat: add MaiMemo keyboard helper extension`）。
-- 当前本地分支为 `master`；是否在首次公开时改为 `main` 由维护者决定。
-- 已核实没有配置 Git 远程仓库；本轮没有创建 GitHub 仓库、推送提交或发布 Release。
-- 工作树含大量已修改及尚未跟踪的新文件，包括外观、设置、玻璃组件、测试和文档。必须同时检查 `git diff` 与 `git status --short`，不能仅看已跟踪文件的 diff。
-- 不执行 `git reset --hard` 或 `git clean` 丢弃现有成果。`package.json` 的 `private: true` 仅防止意外发布到 npm，不妨碍 GitHub 公开仓库。
+- 接管前仅有初始提交 `697cab8`（`feat: add MaiMemo keyboard helper extension`）。
+- 接管后已将完整源码、测试、文档、许可证和第三方资源说明提交为 `c24e524`（`feat: add MaiMemo keyboard helper extension`），当前本地分支为 `main`。
+- 已创建公开远程仓库 `https://github.com/TUNTIANHAMMA-2/maimemo-keyboard-helper`，`origin/main` 与本地 `main` 已核对为同一提交。
+- 工作树当前应保持干净；`node_modules`、生成目录、浏览器用户目录、账号信息和缓存不提交。`package.json` 的 `private: true` 仅防止意外发布到 npm，不妨碍 GitHub 公开仓库。
 
 ## 构建和交付
 
@@ -41,14 +40,15 @@ npm run zip
 3. 官网猫头鹰图片来自 MaiMemo，使用者要求扩展在页面内保留原貌并进行位置复用；用户已确认它不作为 GitHub 仓库头像、仓库标识或项目自有 Logo。2026-10-30 已查阅官网《产品与服务使用协议》第 6.3 条；图片不属于项目自身 MIT 许可，公开发布时必须保留来源、用途和权利边界说明，不要修改本地原图后又声称是项目原创。详情见 `docs/brand-assets.md`。
 4. 对照 `git status --short` 检查待提交清单。不要提交 `node_modules`、生成目录、浏览器用户目录、账号信息、缓存或真实学习记录。测试夹具全部是模拟数据。
 5. 使用已确认的 GitHub 账号 `TUNTIANHAMMA-2`，仓库名 `maimemo-keyboard-helper`，公开可见，默认分支使用 `main`；创建仓库后添加 remote，再提交并推送完整源代码。
-6. 发布 `v0.3.1` Release，附两个 ZIP 和变更说明。公开源代码必须含锁文件与可重建组件源代码，不能只上传压缩包。
+6. 已生成并检查 `v0.3.1` Release 所需的两个 ZIP；发布后核对 Release URL、资产名称和下载可用性。公开源代码含锁文件与可重建组件源代码，不能只上传压缩包。
 7. 记录 GitHub URL、提交 hash、Release URL、各浏览器实测范围及未完成事项。扩展商店上架不在本次已完成范围内。
 
 ## 本轮验证记录
 
 - 单元测试已覆盖 `browser` / `chrome` 设置、快捷键以及双版本清单和权限一致性。
 - 两种 API 的完整模拟浏览器回归均已通过，包含 320 / 390 / 800 / 1440 / 1880 像素布局、记忆历史、输入保护与路由恢复。
-- 在原生 Chromium 145.0.7632.6 中成功加载 Chromium 目录，验证了真实扩展 API、持久化设置、`storage.onChanged`、CSP、本地图标与组件、自动注入、快捷键和打开设置页。
+- 在手动下载的 Chrome for Testing 156.0.8078.4 中成功加载 Chromium 目录，验证了真实扩展 API、持久化设置、`storage.onChanged`、CSP、本地图标与组件、自动注入、快捷键和打开设置页。
+- `npx playwright install chromium` 曾因下载通道 TLS 错误失败；改用同一 Chrome for Testing 构建的代理下载后，原生扩展测试通过。
 - 浏览器测试使用本地模拟页面，不访问现有浏览器用户目录，不登录墨墨，也不提交真实学习记录。
 - Google Chrome、Microsoft Edge、Firefox / Zen 的真实账号学习页仍需人工复核。不要把 Chromium 自动化或 Firefox 用户代理模拟称作所有品牌浏览器已实测。
 

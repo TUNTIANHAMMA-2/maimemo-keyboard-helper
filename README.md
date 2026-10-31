@@ -4,6 +4,18 @@
 
 项目文档：[项目总览与待办](docs/PROJECT.md) · [Hermes 接管说明](docs/HERMES_HANDOFF.md) · [开发与测试](CONTRIBUTING.md) · [版本记录](CHANGELOG.md)。
 
+## 预览
+
+截图由 `npm run test:browser` 在 Chromium 内核浏览器中载入 0.3.3 源码后生成；页面是本地模拟的学习页，示例单词与记忆记录均为测试数据，不含账号信息。实际显示效果取决于墨墨当前页面结构与所选主题。
+
+| 学习页（浅色） | 学习页（深色） |
+| :---: | :---: |
+| ![浅色学习页：左侧青色渐变、满高布局与三色按钮](docs/screenshots/study-light.png) | ![深色学习页：Liquid Glass 面板与记忆历史](docs/screenshots/study-dark.png) |
+
+| 窄屏 390px | 设置页 |
+| :---: | :---: |
+| ![窄屏学习页](docs/screenshots/study-mobile.png) | ![扩展设置页](docs/screenshots/settings.png) |
+
 ## 0.3.3 浏览器版本
 
 同一份源码生成两个版本：`firefox` 用于 Firefox / Zen，`chromium` 用于 Chrome / Edge。设置、图标和打开设置页的操作同时支持 `browser` 与 `chrome` API；Chromium 清单去掉 Gecko 专用字段，最低 Chromium 版本设为 120。
@@ -91,7 +103,7 @@ npm run zip -- --output-dir /path/to/outputs
 - `npm run build`：重建玻璃背景与 `dist/firefox`、`dist/chromium`。`dist` 是可重复生成的安装目录，构建时会重建对应子目录。
 - `npm run zip`：生成两个安装目录与两个 ZIP，默认写入本仓库的 `releases` 目录。打包使用 Node 标准库，支持 Windows、macOS 和 Linux，不再依赖 PowerShell；只打包运行文件与使用说明。
 
-可选浏览器测试：安装开发用 Playwright 和其 Chromium 后运行 `npm run test:browser`。已有 Playwright 环境可通过 `MAIMEMO_PLAYWRIGHT_MODULE` 指向其 `index.mjs`，并可通过 `MAIMEMO_BROWSER_EXECUTABLE` 指定浏览器可执行文件。设置 `MAIMEMO_SCREENSHOT_DIR` 可导出浅色、深色、窄屏与设置页截图。此测试不属于扩展运行时。
+可选浏览器测试：安装开发用 Playwright 和其 Chromium 后运行 `npm run test:browser`。已有 Playwright 环境可通过 `MAIMEMO_PLAYWRIGHT_MODULE` 指向其 `index.mjs`，并可通过 `MAIMEMO_BROWSER_EXECUTABLE` 指定浏览器可执行文件。设置 `MAIMEMO_SCREENSHOT_DIR` 可导出浅色、深色、窄屏与设置页截图，README 的预览图即由此生成；重新生成后请替换 `docs/screenshots/` 下的同名文件。此测试不属于扩展运行时。
 
 `npm run test:browser:chromium` 使用仅有 `chrome` API 的模拟环境执行同一套回归。`npm run test:extension` 则将 `dist/chromium` 作为真实扩展加载，测试原生存储、内容脚本注入、扩展页面 CSP、弹窗和设置同步；另用背景条纹的实际像素验证折射位移、文字清晰度和作用范围，避免只检查组件是否存在。需要完整 Chromium，不能使用 headless-shell，可通过 `MAIMEMO_EXTENSION_BROWSER_EXECUTABLE` 指定路径。详见 [开发与测试](CONTRIBUTING.md)。
 
@@ -107,7 +119,7 @@ popup/       快速开关与主题切换
 tests/       无依赖单元测试与可选浏览器模拟测试
 scripts/     语法检查与扩展打包
 ui/          Liquid Glass 背景适配层源代码
-docs/        项目管理、交接、用户脚本与第三方资源说明
+docs/        项目管理、交接、用户脚本、截图与第三方资源说明
 dist/        生成的双版本安装目录（不提交 Git）
 releases/    生成的双版本 ZIP（不提交 Git）
 ```

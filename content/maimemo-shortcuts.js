@@ -55,15 +55,19 @@
       .find((element) => element.childElementCount === 0 && element.textContent.trim() === text);
   }
 
-  function clickFeedback(text) {
+  function clickFeedback(action, ...labels) {
+    const proxy = document.querySelector(`#mm-traffic-controls [data-mm-action="${action}"]`);
+    if (proxy) return clickElement(proxy);
     const button = [...document.querySelectorAll('taro-button-core, button, [role="button"]')]
-      .find((element) => visible(element) && element.classList.contains('reset-button') && element.textContent.trim().startsWith(text));
+      .find((element) => visible(element) && element.classList.contains('reset-button')
+        && labels.some((text) => element.textContent.trim().startsWith(text)));
     return clickElement(button);
   }
 
   function clickWellFamiliar() {
     // The menu shares this class. It must never be used as a review action.
-    if (!visible(document.querySelector('.rev-resp-btns'))) return false;
+    const proxy = document.querySelector('#mm-traffic-controls [data-mm-action="familiar"]');
+    if (proxy ? proxy.disabled : !visible(document.querySelector('.rev-resp-btns'))) return false;
     const shortcut = document.querySelector('.rev-shortcut:not(#rev-top-menu)');
     return clickElement(shortcut);
   }
@@ -77,9 +81,9 @@
       const recallMask = document.querySelector('.rev-recall-mask-partial');
       return clickElement(recallMask);
     }
-    if (action === 'familiar') return clickFeedback('认识');
-    if (action === 'vague') return clickFeedback('模糊') || clickFeedback('不确定');
-    if (action === 'forget') return clickFeedback('忘记') || clickFeedback('不认识');
+    if (action === 'familiar') return clickFeedback(action, '认识');
+    if (action === 'vague') return clickFeedback(action, '模糊', '不确定');
+    if (action === 'forget') return clickFeedback(action, '忘记', '不认识');
     if (action === 'wellFamiliar') return clickWellFamiliar();
     return false;
   }

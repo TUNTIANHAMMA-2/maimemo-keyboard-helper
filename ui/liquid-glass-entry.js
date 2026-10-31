@@ -59,7 +59,7 @@ function candidates() {
     for (const node of document.querySelectorAll(selector)) if (shown(node)) result.set(node, kind);
   };
   if (root.dataset.mmUi) {
-    add('main > section', 'panel');
+    add('main section', 'panel');
     add('main button', 'button');
   } else {
     if (root.dataset.mmHomeLayout === 'true') {

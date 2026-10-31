@@ -23,7 +23,7 @@
   let checkboxClicked = false;
   let checkboxPending = false;
   let retryTimer;
-  const decorated = new Set();
+  let trafficControls;
   const activatedKeys = new Set();
 
   function setAttribute(node, name, value) {
@@ -194,49 +194,61 @@
     return definition.labels.find((label) => button.textContent.trim().startsWith(label));
   }
 
-  function restoreButton(button) {
-    if (!button.hasAttribute('data-mm-action')) return;
-    for (const name of ['title', 'aria-label', 'aria-keyshortcuts', 'tabindex', 'role']) {
-      const original = button.getAttribute(`data-mm-original-${name}`);
-      if (original === null) button.removeAttribute(name);
-      else button.setAttribute(name, original);
-      button.removeAttribute(`data-mm-original-${name}`);
-    }
-    for (const name of ['data-mm-action', 'data-mm-symbol', 'data-mm-tooltip']) button.removeAttribute(name);
+  function feedbackTarget(activeRoot, definition) {
+    if (!activeRoot || [...activeRoot.querySelectorAll('.rev-recall-mask, .rev-recall-mask-partial')].some(available)) return null;
+    return [...activeRoot.querySelectorAll('.rev-resp-btns .reset-button')].find((button) => {
+      if (!labelFor(button, definition) || button.disabled || button.getAttribute('aria-disabled') === 'true'
+        || (button.hasAttribute('disabled') && button.getAttribute('disabled') !== 'false')
+        || button.closest('[hidden], [aria-hidden="true"]')) return false;
+      for (let node = button; node && node !== activeRoot; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        // Only our CSS hides the native group; keep its DOM and click handlers intact.
+        if ((!node.matches('.rev-resp-btns') && style.display === 'none') || style.visibility === 'hidden') return false;
+      }
+      return true;
+    });
   }
 
-  function decorateButtons(activeRoot) {
-    const buttons = activeRoot ? [...activeRoot.querySelectorAll('.rev-resp-btns .reset-button')] : [];
-    for (const button of decorated) {
-      if (!settings.appearance.trafficLights || !buttons.includes(button)) {
-        restoreButton(button);
-        decorated.delete(button);
+  function syncTrafficControls(activeRoot) {
+    if (!activeRoot || !settings.appearance.trafficLights) {
+      trafficControls?.remove();
+      return;
+    }
+    if (!trafficControls) {
+      trafficControls = document.createElement('div');
+      trafficControls.id = 'mm-traffic-controls';
+      trafficControls.setAttribute('role', 'group');
+      trafficControls.setAttribute('aria-label', '复习反馈');
+      for (const definition of feedback) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.mmAction = definition.action;
+        button.dataset.mmSymbol = definition.symbol;
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          if (!settings.appearance.trafficLights) return;
+          const target = feedbackTarget(button.closest('.rev-root'), definition);
+          if (target) target.click();
+          // Disable immediately after a native synchronous rerender; no stale second click.
+          syncTrafficControls(button.closest('.rev-root'));
+        });
+        trafficControls.append(button);
       }
     }
-    if (!settings.appearance.trafficLights) return;
-    for (const button of buttons) {
-      const definition = feedback.find((item) => labelFor(button, item));
-      if (!definition) continue;
-      if (!decorated.has(button)) {
-        for (const name of ['title', 'aria-label', 'aria-keyshortcuts', 'tabindex', 'role']) {
-          const original = button.getAttribute(name);
-          if (original !== null) button.setAttribute(`data-mm-original-${name}`, original);
-        }
-        decorated.add(button);
-      }
-      const label = labelFor(button, definition);
+    if (trafficControls.parentElement !== activeRoot) activeRoot.append(trafficControls);
+    for (const definition of feedback) {
+      const button = trafficControls.querySelector(`[data-mm-action="${definition.action}"]`);
+      const target = feedbackTarget(activeRoot, definition);
+      const label = target ? labelFor(target, definition) : definition.labels[0];
       const key = settings.enabled ? settings.shortcuts[definition.action] : '';
       const shortcut = key || (settings.enabled ? '未设置快捷键' : '扩展快捷键已停用');
-      const prediction = button.querySelector('.predict')?.textContent.trim();
-      const tooltip = [label, shortcut, prediction].filter(Boolean).join(' · ');
-      setAttribute(button, 'data-mm-action', definition.action);
-      setAttribute(button, 'data-mm-symbol', definition.symbol);
+      const prediction = target?.querySelector('.predict')?.textContent.trim();
+      const tooltip = [label, shortcut, target ? prediction : '先显示答案后可用'].filter(Boolean).join(' · ');
       setAttribute(button, 'data-mm-tooltip', tooltip);
       setAttribute(button, 'aria-label', tooltip);
-      // Custom Taro buttons are not keyboard focusable by default.
-      if (!button.matches('button, input')) {
-        setAttribute(button, 'tabindex', '0');
-        setAttribute(button, 'role', 'button');
+      if (button.disabled !== !target) {
+        if (!target && document.activeElement === button) button.blur();
+        button.disabled = !target;
       }
       if (key) setAttribute(button, 'aria-keyshortcuts', key);
       else button.removeAttribute('aria-keyshortcuts');
@@ -309,7 +321,7 @@
       applyTheme();
     } else if (toolbar && !toolbar.hidden) toolbar.hidden = true;
     syncMemoryHistory(activeRoot);
-    decorateButtons(activeRoot);
+    syncTrafficControls(activeRoot);
     autoStart();
   }
 
@@ -353,6 +365,16 @@
   window.addEventListener('blur', () => activatedKeys.clear());
   colorScheme.addEventListener('change', applyTheme);
   config.watch((next) => { settings = next; schedule(); });
+  extensionAPI.runtime.onMessage?.addListener((message, _sender, sendResponse) => {
+    if (message?.type !== 'maimemo:reapply') return;
+    config.read().then((next) => {
+      settings = next;
+      refresh();
+      globalThis.MaimemoLiquidGlass?.refresh();
+      sendResponse({ ok: true });
+    }).catch(() => sendResponse({ ok: false }));
+    return true;
+  });
   config.read().then((value) => { settings = value; schedule(); }).catch(() => {
     settings = config.normalize();
     // A storage failure should not start a session without the user's saved preference.

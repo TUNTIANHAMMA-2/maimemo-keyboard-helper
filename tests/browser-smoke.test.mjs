@@ -45,8 +45,12 @@ function storageMock({ initial, apiNamespace }) {
   window[apiNamespace] = {
     storage: {
       local: {
-        get: async () => ({ maimemoKeyboardSettings: stored }),
+        get: async () => {
+          if (window.__readFails) throw new Error('simulated read failure');
+          return { maimemoKeyboardSettings: stored };
+        },
         set: async (next) => {
+          if (window.__saveFails) throw new Error('simulated save failure');
           stored = structuredClone(next.maimemoKeyboardSettings);
           for (const listener of listeners) listener({ maimemoKeyboardSettings: { newValue: stored } }, 'local');
         }
@@ -56,6 +60,15 @@ function storageMock({ initial, apiNamespace }) {
     runtime: {
       openOptionsPage: () => { window.__openedOptions = true; },
       getURL: (path) => `http://helper.test/${path}`
+    },
+    tabs: {
+      query: async () => [{ id: 42 }],
+      sendMessage: async (id, message) => {
+        if (window.__sendFails) throw new Error('simulated missing content script');
+        window.__lastMessage = { id, message };
+        return { ok: true };
+      },
+      create: async ({ url }) => { window.__openedURL = url; }
     }
   };
 }
@@ -143,10 +156,12 @@ async function checkLayout(page) {
 async function checkRevealPosition(page) {
   await page.evaluate(() => window.__fixture.recall());
   await frames(page);
-  const selectors = ['.rev-top .spelling', '.rev-top > .phonetic'];
+  const selectors = ['.rev-top .spelling', '.rev-top > .phonetic', '.back', '.rev-top-stats > taro-text-core:nth-of-type(1)', '.rev-top-stats > taro-text-core:nth-of-type(2)', ...['forget', 'vague', 'familiar'].map((action) => `[data-mm-action="${action}"]`)];
+  assert.equal(await page.locator('#mm-traffic-controls button:disabled').count(), 3, 'all three buttons stay visible but cannot submit before reveal');
   const before = await Promise.all(selectors.map((selector) => page.locator(selector).boundingBox()));
   await reveal(page);
   const after = await Promise.all(selectors.map((selector) => page.locator(selector).boundingBox()));
+  assert.equal(await page.locator('#mm-traffic-controls button:enabled').count(), 3);
   for (let i = 0; i < selectors.length; i++) {
     for (const dimension of ['x', 'y', 'width', 'height']) assert.ok(Math.abs(before[i][dimension] - after[i][dimension]) < 1, `${selectors[i]} must not jump when revealing the definition`);
   }
@@ -210,6 +225,9 @@ try {
   await page.waitForSelector('#mm-study-toolbar .glass__warp');
   assert.equal(await page.locator('.mm-wordmark, .mm-reveal-hint').count(), 0, 'removed toolbar text must not be recreated');
   assert.equal(await page.locator('.rev-top-stats #mm-study-toolbar').count(), 1, 'theme button belongs inside the site header');
+  assert.equal(await page.locator('#mm-traffic-controls button:disabled').count(), 3);
+  await page.locator('[data-mm-action="forget"]').evaluate((button) => button.click());
+  assert.equal(await count(page, 'forget'), 0, 'disabled recall controls must not submit');
   const wordBefore = await page.locator('.rev-top .spelling').boundingBox();
   assert.equal(await page.getAttribute('html', 'data-mm-theme'), 'light');
   assert.equal(await page.locator('.taro__toast').isVisible(), false);
@@ -293,6 +311,14 @@ try {
   await change(page, { appearance: { trafficLights: false } });
   assert.equal(await page.locator('[data-mm-action]').count(), 0, 'disabling traffic lights restores the original controls');
   assert.equal(await page.getAttribute('[data-feedback="familiar"]', 'aria-label'), null);
+  const leftBack = await page.locator('.back').boundingBox();
+  const container = await page.locator('.rev-root').boundingBox();
+  assert.ok(leftBack.x - container.x <= 26, 'turning traffic lights off must reclaim the reserved left space');
+  assert.equal(await page.locator('[data-feedback="familiar"]').isVisible(), true, 'native feedback controls return when traffic lights are disabled');
+  await page.evaluate(() => window.__fixture.recall());
+  await frames(page);
+  assert.deepEqual(await page.locator('.back').boundingBox(), leftBack, 'the left-aligned back button must stay put across recall and reveal');
+  await reveal(page);
   await change(page, { appearance: { trafficLights: true, theme: 'system' } });
   await media(page, 'dark');
   await frames(page);
@@ -323,6 +349,12 @@ try {
     await frames(page);
     await checkRevealPosition(page);
     await checkLayout(page);
+    await change(page, { appearance: { trafficLights: false } });
+    await checkLayout(page);
+    const back = await page.locator('.back').boundingBox();
+    const root = await page.locator('.rev-root').boundingBox();
+    assert.ok(back.x - root.x <= 26, 'disabled traffic lights must also reclaim space on small screens');
+    await change(page, { appearance: { trafficLights: true } });
   }
   await page.locator('[data-tab="1"]').click();
   await frames(page);
@@ -463,6 +495,7 @@ try {
   await screenshot(options, 'settings.png');
   await options.close();
   const popup = await pageFor('', saved, 'http://helper.test/popup/popup.html', false);
+  await popup.setViewportSize({ width: 400, height: 600 });
   await popup.waitForFunction(() => !document.querySelector('#enabled').disabled);
   await popup.locator('[data-theme-value="dark"]').click();
   await popup.locator('#enabled').check();
@@ -471,6 +504,56 @@ try {
   assert.equal(popupSaved.autoStart, false, 'popup updates must preserve every unrelated preference');
   assert.equal(popupSaved.shortcuts.familiar, 'Q');
   assert.equal(popupSaved.appearance.glass, 'system', 'popup updates must preserve the chosen glass mode');
+  await popup.locator('#shortcut-familiar').press('f');
+  await popup.locator('#shortcut-vague').press('f');
+  await popup.locator('#save-shortcuts').click();
+  assert.match(await popup.locator('#status').textContent(), /快捷键重复/);
+  assert.equal((await popup.evaluate(() => window.__readStored())).shortcuts.familiar, 'Q', 'invalid edits must not reach storage');
+  await popup.locator('#shortcut-vague').press('d');
+  await popup.locator('#trafficLights').uncheck();
+  assert.equal(await popup.locator('#shortcut-familiar').inputValue(), 'F', 'quick switches must preserve unsaved shortcut drafts');
+  await popup.locator('#save-shortcuts').click();
+  assert.equal((await popup.evaluate(() => window.__readStored())).shortcuts.familiar, 'F');
+  await popup.locator('#shortcut-familiar').press('g');
+  await popup.locator('#shortcut-familiar').press('Escape');
+  assert.equal(await popup.locator('#shortcut-familiar').inputValue(), 'F');
+  await popup.locator('#shortcut-wellFamiliar').press('Delete');
+  await popup.evaluate(() => { window.__saveFails = true; });
+  await popup.locator('#save-shortcuts').click();
+  assert.match(await popup.locator('#status').textContent(), /保存失败/);
+  assert.equal(await popup.locator('#shortcut-wellFamiliar').inputValue(), '', 'failed writes must keep the user draft');
+  await popup.evaluate(() => { window.__saveFails = false; });
+  await popup.locator('#save-shortcuts').click();
+  assert.equal((await popup.evaluate(() => window.__readStored())).shortcuts.wellFamiliar, '');
+  for (const flag of ['redesign', 'cleanPage', 'hideToasts']) await popup.locator(`#${flag}`).uncheck();
+  await popup.locator('#autoStart').check();
+  await popup.locator('#glass').selectOption('solid');
+  const quick = await popup.evaluate(() => window.__readStored());
+  assert.equal(quick.autoStart, true);
+  assert.equal(quick.appearance.glass, 'solid');
+  for (const flag of ['redesign', 'trafficLights', 'cleanPage', 'hideToasts']) assert.equal(quick.appearance[flag], false);
+  await popup.locator('#reload-settings').click();
+  assert.equal(await popup.locator('#shortcut-familiar').inputValue(), 'F');
+  await popup.locator('#reapply-page').click();
+  assert.equal((await popup.evaluate(() => window.__lastMessage)).message.type, 'maimemo:reapply');
+  assert.match(await popup.locator('#status').textContent(), /已重新应用/);
+  await popup.evaluate(() => { window.__sendFails = true; });
+  await popup.locator('#reapply-page').click();
+  assert.match(await popup.locator('#status').textContent(), /页面未连接/);
+  await popup.locator('#reset-shortcuts').click();
+  assert.equal((await popup.evaluate(() => window.__readStored())).shortcuts.familiar, 'F', 'default shortcuts must wait for explicit save');
+  await popup.locator('#save-shortcuts').click();
+  assert.equal((await popup.evaluate(() => window.__readStored())).shortcuts.familiar, '1');
+  assert.equal((await popup.evaluate(() => window.__readStored())).appearance.theme, 'dark', 'restoring shortcuts must not reset appearance');
+  await screenshot(popup, 'popup.png');
+  const popupStatus = await popup.locator('#status').boundingBox();
+  assert.ok(popupStatus.y + popupStatus.height <= 600, 'save results must remain visible within a real popup-sized viewport');
+  await popup.evaluate(() => { window.__readFails = true; });
+  await popup.locator('#reload-settings').click();
+  assert.match(await popup.locator('#status').textContent(), /设置读取失败/);
+  await popup.evaluate(() => { window.__readFails = false; });
+  await popup.locator('#reload-settings').click();
+  assert.match(await popup.locator('#status').textContent(), /已读取/);
   await popup.locator('#open-options').click();
   assert.equal(await popup.evaluate(() => window.__openedOptions), true);
   await popup.close();

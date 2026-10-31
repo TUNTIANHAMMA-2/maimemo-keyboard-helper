@@ -161,8 +161,33 @@ try {
   await reopened.evaluate(() => MaimemoSettings.update({ appearance: { theme: 'light', glass: 'full' } }));
 
   const optics = await context.newPage();
+  await optics.addInitScript(() => {
+    window.__glassFrames = [];
+    const sample = () => {
+      const host = document.querySelector('#glass-lens');
+      const layer = host?.querySelector('.mm-liquid-mount');
+      if (layer) window.__glassFrames.push({
+        host: [host.clientWidth, host.clientHeight],
+        children: [...layer.children].map((child) => {
+          const rect = child.getBoundingClientRect();
+          return [Math.round(rect.width), Math.round(rect.height)];
+        })
+      });
+      if (window.__glassFrames.length < 30) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
   await optics.goto('https://tc-apis.maimemo.com/webstudy/app?optics=1#/pages/home/index');
   await optics.waitForSelector('#glass-lens[data-mm-refraction="true"]');
+  await optics.waitForFunction(() => window.__glassFrames.length >= 3);
+  const initialFrames = await optics.evaluate(() => window.__glassFrames.slice(0, 3));
+  for (const [index, frame] of initialFrames.entries()) {
+    assert.equal(frame.children.length, 5, `frame ${index}: all decorative siblings must render`);
+    for (const [width, height] of frame.children) {
+      assert.ok(Math.abs(width - frame.host[0]) <= 1 && Math.abs(height - frame.host[1]) <= 1,
+        `frame ${index}: glass must cover its ${frame.host.join('x')} host from the first visible frame, got ${width}x${height}`);
+    }
+  }
   assert.ok(await optics.locator('#glass-lens filter').first().getAttribute('id').then((id) => id.includes('mm-glass-')), 'filter IDs must not collide with the website React roots');
   await optics.waitForTimeout(100); // Allow the embedded SVG displacement image to decode.
   const lens = await optics.locator('#glass-lens').boundingBox();

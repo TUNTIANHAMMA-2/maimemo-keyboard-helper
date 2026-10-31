@@ -51,7 +51,8 @@ button.primary[data-mm-liquid-surface] { --lg-fill: rgb(35 48 62 / 90%); --lg-fi
   pointer-events: none !important;
 }
 .mm-liquid-mount * { pointer-events: none !important; }
-.mm-liquid-mount > * { box-sizing: border-box; transition-property: opacity, box-shadow !important; }
+/* Upstream starts its decorative siblings at 270x69, then measures the host in an effect. */
+.mm-liquid-mount > * { box-sizing: border-box; width: 100% !important; height: 100% !important; transition-property: opacity, box-shadow !important; }
 /* The upstream SVG refracts the host's backdrop; never filter the native text. */
 .mm-liquid-mount .glass__warp { filter: none !important; backdrop-filter: none !important; opacity: 1; }
 .mm-liquid-mount .mm-liquid-surface > .glass { box-sizing: border-box; width: 100%; height: 100%; display: block !important; box-shadow: none !important; }

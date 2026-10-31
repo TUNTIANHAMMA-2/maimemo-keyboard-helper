@@ -18,14 +18,14 @@
 
 ![可编辑扩展操作面板，底部常驻重新应用与状态反馈](docs/screenshots/popup.png)
 
-## 0.3.5 浏览器版本
+## 0.3.6 浏览器版本
 
 同一份源码生成两个版本：`firefox` 用于 Firefox / Zen，`chromium` 用于 Chrome / Edge。设置、图标和打开设置页的操作同时支持 `browser` 与 `chrome` API；Chromium 清单去掉 Gecko 专用字段，最低 Chromium 版本设为 120。
 
 | 浏览器 | 开发载入目录 | 分发文件 |
 | --- | --- | --- |
-| Firefox / Zen | `dist/firefox` | `maimemo-keyboard-helper-firefox-0.3.5.zip` |
-| Chrome / Edge | `dist/chromium` | `maimemo-keyboard-helper-chromium-0.3.5.zip` |
+| Firefox / Zen | `dist/firefox` | `maimemo-keyboard-helper-firefox-0.3.6.zip` |
+| Chrome / Edge | `dist/chromium` | `maimemo-keyboard-helper-chromium-0.3.6.zip` |
 
 0.3.4 修复三色按钮仅在释义页出现造成的跳动：回忆阶段保留禁用圆点，关闭后返回与计数靠左。扩展弹窗可直接编辑和保存快捷键、调整常用开关，并重新应用页面。网页颜色沿用 0.3.3。
 

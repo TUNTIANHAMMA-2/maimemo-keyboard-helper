@@ -97,7 +97,7 @@ try {
   await options.waitForFunction(() => document.querySelector('#status').textContent.includes('已保存'));
   await study.waitForFunction(() => document.documentElement.dataset.mmTheme === 'dark');
   await study.keyboard.press('Space');
-  await study.waitForFunction(() => document.querySelector('[data-mm-action="familiar"]')?.getAttribute('aria-label').includes('Q'));
+  await study.waitForSelector('[data-mm-action="familiar"]:enabled[aria-keyshortcuts="Q"]');
   await screenshot(study, 'chromium-extension-dark.png');
   await study.keyboard.press('q');
   assert.equal(await study.evaluate(() => window.__fixture.counts.familiar), 2, 'native storage.onChanged must update content-script bindings');
@@ -141,7 +141,7 @@ try {
   await popup.locator('#enabled').check();
   await study.locator('#typing').evaluate((input) => { input.blur(); input.classList.add('hidden'); });
   await study.keyboard.press('Space');
-  await study.waitForFunction(() => document.querySelector('[data-mm-action="familiar"]')?.getAttribute('aria-label').includes('F'));
+  await study.waitForSelector('[data-mm-action="familiar"]:enabled[aria-keyshortcuts="F"]');
   await study.keyboard.press('f');
   assert.equal(await study.evaluate(() => window.__fixture.counts.familiar), 3, 'a key edited inside the popup must control the live injected page');
   await study.evaluate(() => { document.documentElement.dataset.mmTheme = 'light'; });

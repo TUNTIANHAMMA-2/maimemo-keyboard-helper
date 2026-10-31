@@ -101,7 +101,7 @@ PR 合并到 `main` 后，GitHub Actions 的 **Test and release** 会在云端�
 2. 运行单元、语法、双浏览器构建、两种 API 模拟及原生 Chromium 扩展回归。
 3. 生成 Firefox／Zen 和 Chrome／Edge 两个 ZIP，验证后写回版本提交、创建版本标签并发布 GitHub Release。
 
-普通 PR 只做检查；关闭但未合并的 PR 不发布。整个发布流程不调用任何模型、不需要 Hermes 在线，也不需要 OpenAI 或其他模型密钥。写入版本号使用 GitHub 自动提供的短期 `GITHUB_TOKEN`。
+普通 PR 会预演版本更新并完成测试和 ZIP 打包，不写回分支或发布 Release；关闭但未合并的 PR 不发布。整个发布流程不调用任何模型、不需要 Hermes 在线，也不需要 OpenAI 或其他模型密钥。写入版本号使用 GitHub 自动提供的短期 `GITHUB_TOKEN`。
 
 在 **Actions → Test and release → Run workflow** 可补发当前 `main`，或重新运行失败的发布。同一已发布版本会跳过；未完成的草稿会继续上传，不覆盖已发布安装包。若验证期间 `main` 又更新，本轮会停止写入，下一轮或手动重跑会验证最新源码。连续快速合并可能合并为一次包含所有最新改动的发布。
 

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export const versionFiles = ['package.json', 'package-lock.json', 'manifest.json', 'README.md', 'CHANGELOG.md', 'content/liquid-glass.js', 'docs/third-party-licenses.txt'];
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
+const botIdentity = ['-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com'];
 const json = async path => JSON.parse(await readFile(path, 'utf8'));
 const save = (path, data) => writeFile(path, `${JSON.stringify(data, null, 2)}\n`);
 
@@ -225,9 +226,8 @@ async function publish(directory, api) {
     git('switch', '--detach', target);
   } else {
     if (git('rev-parse', 'origin/main') !== metadata.sourceSha) throw new Error('main advanced during validation; rerun this workflow on latest main');
-    if (changed.length) git('-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-      'commit', '-m', `chore(release): ${tag} [skip ci]`);
-    git('tag', '-a', tag, '-m', `Release ${tag}`);
+    if (changed.length) git(...botIdentity, 'commit', '-m', `chore(release): ${tag} [skip ci]`);
+    git(...botIdentity, 'tag', '-a', tag, '-m', `Release ${tag}`);
   }
   const commit = git('rev-parse', 'HEAD');
   git('diff', '--exit-code');

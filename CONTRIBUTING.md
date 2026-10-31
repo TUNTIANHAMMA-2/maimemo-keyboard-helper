@@ -53,7 +53,7 @@ npm run test:extension
 
 ## 提交与版本交付
 
-合并到 `main` 后由 `.github/workflows/release.yml` 在 GitHub 云端发布；普通 PR 先运行同一套校验。默认自动递增补丁版本，若维护者已在 PR 中一致设置了更高版本则采用该版本。无需添加模型密钥或在本机运行发布代理。
+合并到 `main` 后由 `.github/workflows/release.yml` 在 GitHub 云端发布；普通 PR 先预演版本更新并运行同一套校验和 ZIP 打包，不执行写回或发布。默认自动递增补丁版本，若维护者已在 PR 中一致设置了更高版本则采用该版本。无需添加模型密钥或在本机运行发布代理。
 
 `scripts/release.mjs` 负责版本规划、已验证源码树与 ZIP 的绑定、草稿续传和发布。脚本的发布入口仅允许运行在 GitHub Actions；不要在发布步骤之前放宽最终检查。更改发布逻辑时运行 `node --test tests/release.test.mjs`。原生浏览器检查的两次尝试由 `scripts/test-browser-ci.mjs` 管理，错误仍保留在 Actions 日志中。
 

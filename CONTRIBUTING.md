@@ -53,6 +53,10 @@ npm run test:extension
 
 ## 提交与版本交付
 
+合并到 `main` 后由 `.github/workflows/release.yml` 在 GitHub 云端发布；普通 PR 先预演版本更新并运行同一套校验和 ZIP 打包，不执行写回或发布。默认自动递增补丁版本，若维护者已在 PR 中一致设置了更高版本则采用该版本。无需添加模型密钥或在本机运行发布代理。
+
+`scripts/release.mjs` 负责版本规划、已验证源码树与 ZIP 的绑定、草稿续传和发布。脚本的发布入口仅允许运行在 GitHub Actions；不要在发布步骤之前放宽最终检查。更改发布逻辑时运行 `node --test tests/release.test.mjs`。原生浏览器检查的两次尝试由 `scripts/test-browser-ci.mjs` 管理，错误仍保留在 Actions 日志中。
+
 提交前运行必需检查并检查 `git status --short`，特别注意未跟踪文件。保持 `content/liquid-glass.js` 与源代码一致，保留 `docs/third-party-licenses.txt`。不要提交依赖、安装目录、ZIP 或浏览器用户数据。
 
 发布说明应写清：改动原因、浏览器目标、测试的实际层次、已知限制。网站 DOM 更新后，先在本地夹具复现，再由维护者用真实页面复核；不要以自动复习提交来测试功能。

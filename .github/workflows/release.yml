@@ -1,0 +1,98 @@
+name: Test and release
+
+on:
+  pull_request:
+    branches: [main]
+  pull_request_target:
+    branches: [main]
+    types: [closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request_target' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      should_release: ${{ steps.prepare.outputs.should_release }}
+      source_sha: ${{ steps.prepare.outputs.source_sha }}
+      version: ${{ steps.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Never check out an unmerged PR head in a privileged target event.
+          ref: ${{ github.event_name == 'pull_request' && github.sha || 'main' }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Prepare release version
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release.mjs prepare "$RUNNER_TEMP/release-payload"
+      - name: Install and check
+        if: github.event_name == 'pull_request' || steps.prepare.outputs.should_release == 'true'
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm test
+          npm run check
+          npm run build
+      - name: Install isolated browser tooling
+        if: github.event_name == 'pull_request' || steps.prepare.outputs.should_release == 'true'
+        run: |
+          npm install --prefix "$RUNNER_TEMP/browser-tests" --no-package-lock --ignore-scripts playwright@1.62.1
+          node "$RUNNER_TEMP/browser-tests/node_modules/playwright/cli.js" install --with-deps --no-shell chromium
+          echo "MAIMEMO_PLAYWRIGHT_MODULE=$RUNNER_TEMP/browser-tests/node_modules/playwright/index.mjs" >> "$GITHUB_ENV"
+          browser=$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/browser-tests/node_modules/playwright")
+          echo "MAIMEMO_BROWSER_EXECUTABLE=$browser" >> "$GITHUB_ENV"
+          echo "MAIMEMO_EXTENSION_BROWSER_EXECUTABLE=$browser" >> "$GITHUB_ENV"
+      - name: Browser and native extension regression
+        if: github.event_name == 'pull_request' || steps.prepare.outputs.should_release == 'true'
+        run: node scripts/test-browser-ci.mjs
+      - name: Package both browsers
+        if: steps.prepare.outputs.should_release == 'true'
+        run: |
+          npm run zip -- --output-dir "$RUNNER_TEMP/release-payload"
+          node scripts/release.mjs bundle "$RUNNER_TEMP/release-payload"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name != 'pull_request' && steps.prepare.outputs.should_release == 'true'
+        with:
+          name: release-payload-${{ github.run_id }}
+          path: ${{ runner.temp }}/release-payload/
+          retention-days: 7
+          overwrite: true
+
+  publish:
+    needs: build
+    if: github.event_name != 'pull_request' && needs.build.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.build.outputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-payload-${{ github.run_id }}
+          path: ${{ runner.temp }}/release-payload
+      - name: Publish validated commit and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release.mjs publish "$RUNNER_TEMP/release-payload"

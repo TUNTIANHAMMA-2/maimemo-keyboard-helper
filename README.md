@@ -93,6 +93,22 @@ Chrome / Edge 的本地安装流程见 [Chrome 官方教程](https://developer.c
 
 ## 开发与验证
 
+### 合并后自动发布
+
+PR 合并到 `main` 后，GitHub Actions 的 **Test and release** 会在云端自动处理：
+
+1. 递增补丁版本号，并同步 `manifest.json`、`package.json`、锁文件、当前下载文件名和版本记录。
+2. 运行单元、语法、双浏览器构建、两种 API 模拟及原生 Chromium 扩展回归。
+3. 生成 Firefox／Zen 和 Chrome／Edge 两个 ZIP，验证后写回版本提交、创建版本标签并发布 GitHub Release。
+
+普通 PR 会预演版本更新并完成测试和 ZIP 打包，不写回分支或发布 Release；关闭但未合并的 PR 不发布。整个发布流程不调用任何模型、不需要 Hermes 在线，也不需要 OpenAI 或其他模型密钥。写入版本号使用 GitHub 自动提供的短期 `GITHUB_TOKEN`。
+
+在 **Actions → Test and release → Run workflow** 可补发当前 `main`，或重新运行失败的发布。同一已发布版本会跳过；未完成的草稿会继续上传，不覆盖已发布安装包。若验证期间 `main` 又更新，本轮会停止写入，下一轮或手动重跑会验证最新源码。连续快速合并可能合并为一次包含所有最新改动的发布。
+
+浏览器检查最多执行两次，首轮失败会打印并记录；连续失败不发布。发布先准备草稿，两个 ZIP 均校验成功后才公开。Actions 运行额度和存储按 GitHub 账户规则计算。
+
+Release 发布后，本地加载的扩展仍需下载新 ZIP、覆盖原安装目录，在浏览器扩展管理页重新加载，再刷新墨墨网页。此流程发布 GitHub 安装包，不包含扩展商店上架。
+
 需要 Node.js 22.15 或更新版本。运行文件已经包含预编译的玻璃组件；开发和重新打包时才需要 npm。
 
 ```sh

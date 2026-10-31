@@ -18,7 +18,7 @@
     "build": "npm run build:glass && node scripts/build-extension.mjs",
     "build:firefox": "npm run build:glass && node scripts/build-extension.mjs --target firefox",
     "build:chromium": "npm run build:glass && node scripts/build-extension.mjs --target chromium",
-    "test": "node tests/shortcut-utils.test.mjs && node tests/settings.test.mjs && node tests/content-shortcuts.test.mjs && node tests/manifests.test.mjs",
+    "test": "node tests/shortcut-utils.test.mjs && node tests/settings.test.mjs && node tests/content-shortcuts.test.mjs && node tests/manifests.test.mjs && node --test tests/release.test.mjs",
     "test:browser": "node tests/browser-smoke.test.mjs",
     "test:browser:chromium": "node tests/browser-smoke.test.mjs --api chrome",
     "test:extension": "node tests/chromium-extension.test.mjs",

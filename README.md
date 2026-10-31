@@ -6,8 +6,6 @@
 
 ## 预览
 
-截图由 `npm run test:browser` 在 Chromium 内核浏览器中载入 0.3.3 源码后生成；页面是本地模拟的学习页，示例单词与记忆记录均为测试数据，不含账号信息。实际显示效果取决于墨墨当前页面结构与所选主题。
-
 | 学习页（浅色） | 学习页（深色） |
 | :---: | :---: |
 | ![浅色学习页：左侧青色渐变、满高布局与三色按钮](docs/screenshots/study-light.png) | ![深色学习页：Liquid Glass 面板与记忆历史](docs/screenshots/study-dark.png) |
@@ -103,11 +101,11 @@ npm run zip -- --output-dir /path/to/outputs
 - `npm run build`：重建玻璃背景与 `dist/firefox`、`dist/chromium`。`dist` 是可重复生成的安装目录，构建时会重建对应子目录。
 - `npm run zip`：生成两个安装目录与两个 ZIP，默认写入本仓库的 `releases` 目录。打包使用 Node 标准库，支持 Windows、macOS 和 Linux，不再依赖 PowerShell；只打包运行文件与使用说明。
 
-可选浏览器测试：安装开发用 Playwright 和其 Chromium 后运行 `npm run test:browser`。已有 Playwright 环境可通过 `MAIMEMO_PLAYWRIGHT_MODULE` 指向其 `index.mjs`，并可通过 `MAIMEMO_BROWSER_EXECUTABLE` 指定浏览器可执行文件。设置 `MAIMEMO_SCREENSHOT_DIR` 可导出浅色、深色、窄屏与设置页截图，README 的预览图即由此生成；重新生成后请替换 `docs/screenshots/` 下的同名文件。此测试不属于扩展运行时。
+可选浏览器测试：安装开发用 Playwright 和其 Chromium 后运行 `npm run test:browser`。已有 Playwright 环境可通过 `MAIMEMO_PLAYWRIGHT_MODULE` 指向其 `index.mjs`，并可通过 `MAIMEMO_BROWSER_EXECUTABLE` 指定浏览器可执行文件。设置 `MAIMEMO_SCREENSHOT_DIR` 可导出浅色、深色、窄屏与设置页截图。此测试不属于扩展运行时。
 
 `npm run test:browser:chromium` 使用仅有 `chrome` API 的模拟环境执行同一套回归。`npm run test:extension` 则将 `dist/chromium` 作为真实扩展加载，测试原生存储、内容脚本注入、扩展页面 CSP、弹窗和设置同步；另用背景条纹的实际像素验证折射位移、文字清晰度和作用范围，避免只检查组件是否存在。需要完整 Chromium，不能使用 headless-shell，可通过 `MAIMEMO_EXTENSION_BROWSER_EXECUTABLE` 指定路径。详见 [开发与测试](CONTRIBUTING.md)。
 
-浏览器测试用本地拦截的模拟页面验证初始加载、异步勾选、仅进入一次、净化恢复、三色按钮、悬停提示、真实键盘事件、路由切换、主题、设置页和弹窗。布局覆盖 320 / 390 / 800 / 1440 / 1880 像素宽度，检查释义出现前后的单词与音标坐标、满高满宽、头部控件不重叠、原生侧栏切换、长释义与例句内部滚动，以及离开学习路由后的布局还原。示例单词为测试数据；测试不登录墨墨，不提交实际复习记录。墨墨更新页面结构后，仍需在实际学习页复核兼容性。
+浏览器测试用本地拦截的模拟页面验证初始加载、异步勾选、仅进入一次、净化恢复、三色按钮、悬停提示、真实键盘事件、路由切换、主题、设置页和弹窗。布局覆盖 320 / 390 / 800 / 1440 / 1880 像素宽度，检查释义出现前后的单词与音标坐标、满高满宽、头部控件不重叠、原生侧栏切换、长释义与例句内部滚动，以及离开学习路由后的布局还原。墨墨更新页面结构后，仍需在实际学习页复核兼容性。
 
 ## 项目结构
 

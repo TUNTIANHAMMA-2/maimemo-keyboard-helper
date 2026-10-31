@@ -47,6 +47,8 @@ npm run test:extension
 
 `test:extension` 真正加载 `dist/chromium`，验证清单、原生存储、设置同步、内容脚本和样式自动注入、扩展 CSP、图标、弹窗与设置页。使用随机临时用户目录并在结束时清理，网页请求由测试夹具本地响应，不操作真实账号。自动化建议使用 Playwright 分发的 Chromium；品牌 Chrome / Edge 的侧载限制可能不同，按 README 人工载入核验。
 
+玻璃回归还会加载 `tests/fixtures/glass-optics.html`，对比启用与关闭 SVG 位移时的截图像素：背景条纹必须实际移动，前景正文和面板外像素必须保持一致。`tests/png-reader.mjs` 只解码 Chromium 的测试截图，不加入扩展包。修改玻璃滤镜、透明度或合成层次时，不能用“SVG 元素存在”代替该光学检查。
+
 ## 提交与版本交付
 
 提交前运行必需检查并检查 `git status --short`，特别注意未跟踪文件。保持 `content/liquid-glass.js` 与源代码一致，保留 `docs/third-party-licenses.txt`。不要提交依赖、安装目录、ZIP 或浏览器用户数据。

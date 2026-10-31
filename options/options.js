@@ -16,7 +16,9 @@ function render() {
   document.querySelector('#autoStart').checked = settings.autoStart;
   for (const flag of flags) document.querySelector(`#${flag}`).checked = settings.appearance[flag];
   document.querySelector('#theme').value = settings.appearance.theme;
+  document.querySelector('#glass').value = settings.appearance.glass;
   document.documentElement.dataset.theme = settings.appearance.theme;
+  document.documentElement.dataset.glass = settings.appearance.glass;
   const container = document.querySelector('#shortcut-fields');
   container.replaceChildren();
   for (const action of config.ACTIONS) {
@@ -55,13 +57,16 @@ function collect() {
   return config.normalize({
     enabled: document.querySelector('#enabled').checked,
     autoStart: document.querySelector('#autoStart').checked,
-    appearance: { ...Object.fromEntries(flags.map((flag) => [flag, document.querySelector(`#${flag}`).checked])), theme: document.querySelector('#theme').value },
+    appearance: { ...Object.fromEntries(flags.map((flag) => [flag, document.querySelector(`#${flag}`).checked])), theme: document.querySelector('#theme').value, glass: document.querySelector('#glass').value },
     shortcuts: Object.fromEntries(config.ACTIONS.map((action) => [action, document.querySelector(`#shortcut-${action}`).value]))
   });
 }
 
 document.querySelector('#theme').addEventListener('change', (event) => {
   document.documentElement.dataset.theme = event.target.value;
+});
+document.querySelector('#glass').addEventListener('change', (event) => {
+  document.documentElement.dataset.glass = event.target.value;
 });
 document.querySelector('#save').addEventListener('click', async () => {
   const next = collect();

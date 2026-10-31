@@ -42,6 +42,7 @@
   function applyTheme() {
     const root = document.documentElement;
     if (!root || !settings) return;
+    setAttribute(root, 'data-mm-glass', settings.appearance.glass);
     if (isApp) setAttribute(root, 'data-mm-theme', config.resolveTheme(settings.appearance.theme, colorScheme.matches));
     if (themeButton) {
       const symbol = { system: '◐', light: '☀', dark: '☾' }[settings.appearance.theme];

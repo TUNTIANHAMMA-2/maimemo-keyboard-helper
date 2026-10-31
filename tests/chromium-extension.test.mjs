@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readPNG, red, equalRegion } from './png-reader.mjs';
 
 const modulePath = process.env.MAIMEMO_PLAYWRIGHT_MODULE;
 const { chromium } = await import(modulePath ? pathToFileURL(modulePath).href : 'playwright');
@@ -10,6 +11,7 @@ const project = fileURLToPath(new URL('../', import.meta.url));
 const extension = resolve(project, 'dist/chromium');
 const manifest = JSON.parse(await readFile(resolve(extension, 'manifest.json'), 'utf8'));
 const html = await readFile(resolve(project, 'tests/fixtures/study.html'), 'utf8');
+const opticsHTML = await readFile(resolve(project, 'tests/fixtures/glass-optics.html'), 'utf8');
 const profile = await mkdtemp(join(tmpdir(), 'maimemo-extension-test-'));
 const errors = [];
 let context;
@@ -64,7 +66,7 @@ try {
 
   // Content scripts and their styles are injected by the extension, not addInitScript.
   // The web page is synthetic and fulfilled locally: no account or real review is used.
-  await context.route('https://tc-apis.maimemo.com/**', (route) => route.fulfill({ contentType: 'text/html', body: html }));
+  await context.route('https://tc-apis.maimemo.com/**', (route) => route.fulfill({ contentType: 'text/html', body: new URL(route.request().url()).searchParams.has('optics') ? opticsHTML : html }));
   const study = await context.newPage();
   await study.goto('https://tc-apis.maimemo.com/webstudy/app#/pages/home/index');
   await study.waitForSelector('#mm-study-toolbar .glass__warp');
@@ -73,6 +75,7 @@ try {
   await study.keyboard.press('Space');
   await study.waitForSelector('[data-mm-action="familiar"]');
   await study.waitForSelector('#mm-memory-history');
+  assert.ok(await study.locator('.interp-ctn').evaluate((node) => getComputedStyle(node).backdropFilter.includes('url(')), 'full glass must refract even if the host OS reduces transparency');
   assert.match(await study.locator('#mm-memory-history').textContent(), /记忆 2 次/);
   const word = await study.locator('.spelling').boundingBox();
   const overflow = await study.evaluate(() => ({ height: document.scrollingElement.scrollHeight, viewport: innerHeight }));
@@ -114,6 +117,41 @@ try {
   await reopened.waitForURL(`${origin}/options/options.html`);
   await reopened.waitForFunction(() => !document.querySelector('#save').disabled);
   assert.equal(await reopened.locator('#shortcut-familiar').inputValue(), 'Q');
+  await reopened.evaluate(() => MaimemoSettings.update({ appearance: { theme: 'light', glass: 'full' } }));
+
+  const optics = await context.newPage();
+  await optics.goto('https://tc-apis.maimemo.com/webstudy/app?optics=1#/pages/home/index');
+  await optics.waitForSelector('#glass-lens[data-mm-refraction="true"]');
+  assert.ok(await optics.locator('#glass-lens filter').first().getAttribute('id').then((id) => id.includes('mm-glass-')), 'filter IDs must not collide with the website React roots');
+  await optics.waitForTimeout(100); // Allow the embedded SVG displacement image to decode.
+  const lens = await optics.locator('#glass-lens').boundingBox();
+  const label = await optics.locator('#optics-label').boundingBox();
+  const refracted = readPNG(await optics.screenshot());
+  await screenshot(optics, 'glass-optics-on.png');
+  await optics.locator('#glass-lens').evaluate((node) => node.style.setProperty('--lg-refraction', 'blur(0px)'));
+  const plain = readPNG(await optics.screenshot());
+  await screenshot(optics, 'glass-optics-off.png');
+  let moved = 0;
+  let maxShift = 0;
+  const y = Math.round(lens.y + 50);
+  const edge = (image, boundary) => {
+    let best = boundary, gradient = -1;
+    for (let x = boundary - 13; x <= boundary + 13; x++) {
+      const delta = Math.abs(red(image, x + 1, y) - red(image, x, y));
+      if (delta > gradient) { gradient = delta; best = x; }
+    }
+    return best;
+  };
+  for (let x = Math.ceil((lens.x + 64) / 32) * 32; x < lens.x + lens.width - 64; x += 32) {
+    const shift = Math.abs(edge(refracted, x) - edge(plain, x));
+    if (shift >= 2) moved++;
+    maxShift = Math.max(maxShift, shift);
+  }
+  assert.ok(moved >= 5 && maxShift >= 3, `glass must visibly bend background edges, not just tint or blur them: moved=${moved}, maxShift=${maxShift}`);
+  assert.equal(equalRegion(refracted, plain, { x: label.x + 2, y: label.y + 2, width: label.width - 4, height: label.height - 4 }), true, 'the same foreground text pixels must stay sharp and unchanged');
+  assert.equal(equalRegion(refracted, plain, { x: 0, y: 0, width: 1440, height: 80 }), true, 'refraction must stay inside its panel');
+  assert.deepEqual(await optics.locator('#glass-lens').boundingBox(), lens, 'the optical effect must not move the panel');
+  console.log(`Optical pixel regression passed: ${moved} background edges displaced, maximum ${maxShift}px; foreground and outside pixels unchanged.`);
   assert.deepEqual(errors, []);
   console.log(`Native Chromium ${context.browser().version()} extension test passed: generated manifest, CSP, local assets, real storage, live changes, injected styles/scripts, shortcuts and popup.`);
   console.log('Isolated temporary profile and locally fulfilled fixtures only; no real study submissions or existing browser profile access.');

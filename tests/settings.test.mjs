@@ -21,6 +21,7 @@ for (const namespace of ['browser', 'chrome']) {
   assert.equal(old.shortcuts.familiar, 'Q', 'upgrade preserves custom shortcuts');
   assert.equal(old.autoStart, true);
   assert.equal(old.appearance.theme, 'system');
+  assert.equal(old.appearance.glass, 'full', 'upgraded settings must explicitly enable the requested glass effect');
   await config.update({ appearance: { theme: 'dark', hideToasts: false } });
   assert.equal(stored.shortcuts.familiar, 'Q', 'appearance changes preserve keyboard preferences');
   assert.equal(stored.appearance.hideToasts, false);
@@ -32,6 +33,10 @@ for (const namespace of ['browser', 'chrome']) {
   assert.equal(stored.shortcuts.familiar, 'Alt+Q');
   assert.equal(stored.autoStart, false);
   assert.equal(config.normalize({ appearance: { theme: 'invalid' } }).appearance.theme, 'system');
+  assert.equal(config.normalize({ appearance: { glass: 'invalid' } }).appearance.glass, 'full');
+  await config.update({ appearance: { glass: 'system' } });
+  await config.update({ enabled: true });
+  assert.equal(stored.appearance.glass, 'system', 'unrelated updates must preserve the transparency preference');
   assert.equal(config.resolveTheme('system', true), 'dark');
   assert.equal(config.resolveTheme('system', false), 'light');
   assert.equal(config.resolveTheme('light', true), 'light');

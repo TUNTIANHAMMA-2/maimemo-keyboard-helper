@@ -1,6 +1,6 @@
 {
   "name": "maimemo-keyboard-helper",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "private": true,
   "type": "module",
   "description": "Keyboard shortcuts, focused study layout and themes for MaiMemo in Firefox, Zen, Chrome and Edge.",

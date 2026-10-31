@@ -222,7 +222,8 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll('.mm-liquid-mount')].every((layer) => {
     return [...layer.children].every((child) => Math.abs(child.getBoundingClientRect().width - layer.clientWidth) < 1);
   }));
-  assert.ok(await page.locator('.glass__warp').evaluateAll((nodes) => nodes.some((node) => node.style.filter.includes('url('))), 'the real upstream SVG refraction layer must render');
+  await page.waitForSelector('[data-mm-refraction="true"]');
+  assert.ok(await page.locator('[data-mm-refraction="true"]').evaluateAll((nodes) => nodes.every((node) => getComputedStyle(node).backdropFilter.includes('url('))), 'the upstream SVG must sample the host backdrop');
   assert.equal(await page.locator('.rev-scroller .phrase-phrase').first().evaluate((node) => Boolean(node.closest('.mm-liquid-mount')) || getComputedStyle(node).filter !== 'none'), false, 'glass filters must not warp the learning text');
   const wordAfter = await page.locator('.rev-top .spelling').boundingBox();
   assert.ok(Math.abs(wordBefore.y - wordAfter.y) < 1, 'revealing the answer must keep the word in place');
@@ -372,8 +373,8 @@ try {
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0'
   });
   await firefoxBranch.waitForSelector('#mm-study-toolbar .glass__warp');
-  assert.equal(await firefoxBranch.locator('.glass__warp').evaluateAll((nodes) => nodes.every((node) => !node.style.filter)), true, 'upstream Firefox branch must omit unsupported displacement');
-  const firefoxGlass = await firefoxBranch.locator('.glass__warp').first().evaluate((node) => ({
+  assert.equal(await firefoxBranch.locator('[data-mm-refraction]').count(), 0, 'Firefox must omit unsupported displacement');
+  const firefoxGlass = await firefoxBranch.locator('[data-mm-liquid-surface]').first().evaluate((node) => ({
     inline: node.getAttribute('style'), backdrop: getComputedStyle(node).backdropFilter,
     reducedTransparency: matchMedia('(prefers-reduced-transparency: reduce)').matches
   }));
@@ -449,12 +450,14 @@ try {
   await options.locator('#shortcut-vague').press('w');
   await options.locator('#autoStart').uncheck();
   await options.locator('#theme').selectOption('light');
+  await options.locator('#glass').selectOption('system');
   await options.locator('#save').click();
   await options.waitForFunction(() => document.querySelector('#status').textContent.includes('已保存'));
   const saved = await options.evaluate(() => window.__readStored());
   assert.equal(saved.autoStart, false);
   assert.equal(saved.enabled, false);
   assert.equal(saved.appearance.theme, 'light');
+  assert.equal(saved.appearance.glass, 'system');
   assert.equal(saved.shortcuts.familiar, 'Q');
   assert.equal(saved.shortcuts.vague, 'W');
   await screenshot(options, 'settings.png');
@@ -467,14 +470,19 @@ try {
   assert.equal(popupSaved.appearance.theme, 'dark');
   assert.equal(popupSaved.autoStart, false, 'popup updates must preserve every unrelated preference');
   assert.equal(popupSaved.shortcuts.familiar, 'Q');
+  assert.equal(popupSaved.appearance.glass, 'system', 'popup updates must preserve the chosen glass mode');
   await popup.locator('#open-options').click();
   assert.equal(await popup.evaluate(() => window.__openedOptions), true);
   await popup.close();
-  const opaque = await pageFor('', saved, 'http://helper.test/options/options.html', false, {}, 'reduce');
+  const opaque = await pageFor('', { ...saved, appearance: { ...saved.appearance, glass: 'system' } }, 'http://helper.test/options/options.html', false, {}, 'reduce');
   await opaque.waitForSelector('#save .glass__warp');
-  assert.equal(await opaque.locator('#save .glass__warp').evaluate((node) => getComputedStyle(node).backdropFilter), 'none', 'reduced-transparency mode must be respected');
+  assert.equal(await opaque.locator('#save').evaluate((node) => getComputedStyle(node).backdropFilter), 'none', 'system mode must respect reduced transparency');
   const primaryFill = await opaque.locator('#save .mm-liquid-mount').evaluate((node) => getComputedStyle(node).backgroundColor);
   assert.match(primaryFill, /35, 48, 62/, 'the save button must retain a dark background with its white text');
+  await opaque.locator('#glass').selectOption('full');
+  assert.ok(await opaque.locator('#save').evaluate((node) => getComputedStyle(node).backdropFilter.includes('url(')), 'explicit full glass must work even when the system reduces transparency');
+  await opaque.locator('#glass').selectOption('solid');
+  assert.equal(await opaque.locator('#save').evaluate((node) => getComputedStyle(node).backdropFilter), 'none');
   await opaque.close();
   console.log('settings and popup: migration, recording, validation, persistence and partial updates passed');
   assert.deepEqual(errors, [], 'browser pages must not report uncaught errors');

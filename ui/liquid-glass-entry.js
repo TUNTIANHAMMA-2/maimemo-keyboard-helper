@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { createElement, useLayoutEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import LiquidGlass from 'liquid-glass-react';
 
@@ -7,6 +7,7 @@ const surfaces = new Map();
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 let queued = false;
 let stopped = false;
+let surfaceSerial = 0;
 
 function internal(record) {
   const target = record.target instanceof Element ? record.target : record.target.parentElement;
@@ -23,6 +24,26 @@ const resizeObserver = new ResizeObserver(schedule);
 const observer = new MutationObserver((records) => {
   if (records.some((record) => !internal(record))) schedule();
 });
+
+function GlassBackdrop({ node, layer, ...props }) {
+  useLayoutEffect(() => {
+    const filter = layer.querySelector('.mm-liquid-surface filter');
+    const supported = !/firefox/i.test(navigator.userAgent) && CSS.supports('backdrop-filter', 'url(#glass) blur(1px)');
+    if (filter && supported) {
+      // Sample the page behind the host. A nested, translucent warp cannot see
+      // that backdrop through its parent's compositing boundary in Chromium.
+      const url = new URL(location.href);
+      url.hash = filter.id;
+      node.style.setProperty('--lg-refraction', `url(${JSON.stringify(url.href)})`);
+      node.setAttribute('data-mm-refraction', 'true');
+    }
+    return () => {
+      node.style.removeProperty('--lg-refraction');
+      node.removeAttribute('data-mm-refraction');
+    };
+  }, [node, layer]);
+  return createElement(LiquidGlass, props);
+}
 
 function shown(node) {
   if (node.closest('[hidden], [aria-hidden="true"], .hidden, [data-mm-history-source]')) return false;
@@ -43,7 +64,6 @@ function candidates() {
   } else {
     if (root.dataset.mmHomeLayout === 'true') {
       add('.home .taroify-tabbar', 'rail');
-      add('.home .taroify-tabbar-item--active', 'button');
     }
     if (root.dataset.mmStudy === 'true' && root.dataset.mmRedesign === 'true') {
       add('.rev-root .rev-scroller', 'reading');
@@ -75,7 +95,7 @@ function mount(node, kind) {
   layer.setAttribute('aria-hidden', 'true');
   node.setAttribute('data-mm-liquid-surface', kind);
   node.prepend(layer);
-  const entry = { node, layer, root: createRoot(layer), mouseContainer: { current: node }, signature: '' };
+  const entry = { node, layer, root: createRoot(layer, { identifierPrefix: `mm-glass-${++surfaceSerial}-` }), mouseContainer: { current: node }, signature: '' };
   entry.scroll = () => pinLayer(entry);
   node.addEventListener('scroll', entry.scroll, { passive: true });
   resizeObserver.observe(node);
@@ -92,18 +112,19 @@ function update(entry) {
   layer.style.width = `${width}px`;
   layer.style.height = `${height}px`;
   pinLayer(entry);
-  const signature = `${width}/${height}/${radius}/${reducedMotion.matches}`;
+  const signature = `${width}/${height}/${radius}/${reducedMotion.matches}/${location.href.split('#')[0]}`;
   if (signature === entry.signature) return;
   entry.signature = signature;
-  entry.root.render(createElement(LiquidGlass, {
+  entry.root.render(createElement(GlassBackdrop, {
     key: signature,
+    node, layer,
     className: 'mm-liquid-surface',
     style: { position: 'absolute', top: '50%', left: '50%', width: '100%', height: '100%' },
     padding: '0',
     cornerRadius: radius,
     mode: 'standard',
-    displacementScale: 18,
-    aberrationIntensity: 1.2,
+    displacementScale: 70,
+    aberrationIntensity: 1.5,
     blurAmount: 0.0625,
     saturation: 125,
     elasticity: 0,

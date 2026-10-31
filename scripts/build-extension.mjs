@@ -6,7 +6,7 @@ import { parseArgs } from 'node:util';
 export const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 export const targets = Object.freeze(['firefox', 'chromium']);
 const distRoot = resolve(projectRoot, 'dist');
-const runtimeEntries = ['assets', 'core', 'content', 'options', 'popup', 'README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'docs'];
+const runtimeEntries = ['assets', 'core', 'content', 'options', 'popup', 'README.md', 'LICENSE', 'AGENTS.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'docs'];
 
 export function targetManifest(source, target) {
   if (!targets.includes(target)) throw new Error(`Unknown browser target: ${target}`);

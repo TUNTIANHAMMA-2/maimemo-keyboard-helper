@@ -9,7 +9,7 @@
     enabled: true,
     autoStart: true,
     shortcuts: Object.freeze({ reveal: 'Space', familiar: '1', vague: '2', forget: '3', wellFamiliar: '4' }),
-    appearance: Object.freeze({ cleanPage: true, hideToasts: true, redesign: true, trafficLights: true, theme: 'system' })
+    appearance: Object.freeze({ cleanPage: true, hideToasts: true, redesign: true, trafficLights: true, theme: 'system', glass: 'full' })
   });
 
   function normalize(input) {
@@ -18,6 +18,7 @@
       appearance[name] = input?.appearance?.[name] !== false;
     }
     appearance.theme = ['system', 'light', 'dark'].includes(input?.appearance?.theme) ? input.appearance.theme : 'system';
+    appearance.glass = ['full', 'system', 'solid'].includes(input?.appearance?.glass) ? input.appearance.glass : 'full';
     return {
       enabled: input?.enabled !== false,
       autoStart: input?.autoStart !== false,

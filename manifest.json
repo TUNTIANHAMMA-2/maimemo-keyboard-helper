@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "墨墨学习助手",
   "description": "墨墨网页版可配置快捷键、公测页自动进入、全屏净化、阅读卡片、三色操作按钮与明暗主题。",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "icons": {
     "48": "assets/maimemo-logo.png",
     "96": "assets/maimemo-logo.png"

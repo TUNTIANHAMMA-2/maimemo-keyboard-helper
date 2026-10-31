@@ -4,14 +4,18 @@
 
 项目文档：[项目总览与待办](docs/PROJECT.md) · [Hermes 接管说明](docs/HERMES_HANDOFF.md) · [开发与测试](CONTRIBUTING.md) · [版本记录](CHANGELOG.md)。
 
-## 0.3.1 浏览器版本
+## 0.3.3 浏览器版本
 
 同一份源码生成两个版本：`firefox` 用于 Firefox / Zen，`chromium` 用于 Chrome / Edge。设置、图标和打开设置页的操作同时支持 `browser` 与 `chrome` API；Chromium 清单去掉 Gecko 专用字段，最低 Chromium 版本设为 120。
 
 | 浏览器 | 开发载入目录 | 分发文件 |
 | --- | --- | --- |
-| Firefox / Zen | `dist/firefox` | `maimemo-keyboard-helper-firefox-0.3.1.zip` |
-| Chrome / Edge | `dist/chromium` | `maimemo-keyboard-helper-chromium-0.3.1.zip` |
+| Firefox / Zen | `dist/firefox` | `maimemo-keyboard-helper-firefox-0.3.3.zip` |
+| Chrome / Edge | `dist/chromium` | `maimemo-keyboard-helper-chromium-0.3.3.zip` |
+
+0.3.3 恢复上一版的白灰／深灰蓝配色，右侧使用均匀底色，撤销新增的蓝紫渐变；左侧青色渐变和已修正的玻璃背景采样保留。
+
+0.3.2 修正 Chrome 中只有磨砂底色、没有实际背景折射的问题：将库生成的 SVG 接到面板自身的背景采样，移除内层叠加模糊和 12% 的折射层透明度限制。增加背景纹理位移与前景文字不变的像素回归。
 
 ## 外观与布局
 
@@ -19,7 +23,7 @@
 
 将原新拟态外观替换为指定的 [Liquid Glass React](https://github.com/rdev/liquid-glass-react) 组件，应用于导航、释义、记忆历史、阅读区、主题按钮和扩展界面。玻璃单独渲染在背景层，正文、原生按钮和事件保留；关闭弹性位移，保持单词与控件的位置稳定。左侧青色渐变、Arial 常规字重、红色目标词和记忆历史位置沿用。
 
-上游说明 Firefox / Safari 只能部分支持效果：不显示折射位移，仍保留模糊和边缘高光。系统启用“降低透明度”时会使用更实的底色。具体接入方式、版本与许可证见 [Liquid Glass 接入记录](docs/liquid-glass.md)。
+上游说明 Firefox / Safari 只能部分支持效果：不显示折射位移，仍保留模糊和边缘高光。设置页新增“玻璃效果”：默认“完整 Liquid Glass”，也可选“跟随系统”或“纯色背景”。“跟随系统”会在系统启用“降低透明度”时使用更实的底色；完整模式按扩展中的明确选择显示。具体接入方式、版本与许可证见 [Liquid Glass 接入记录](docs/liquid-glass.md)。
 
 顶部两段文字保持移除，主题按钮整合在页内工具栏。学习区铺满可用宽高，原生导航位于左侧；单词和音标保持固定位置。长释义、记忆历史和例句可在内部滚动，滚动条隐藏。
 
@@ -89,7 +93,7 @@ npm run zip -- --output-dir /path/to/outputs
 
 可选浏览器测试：安装开发用 Playwright 和其 Chromium 后运行 `npm run test:browser`。已有 Playwright 环境可通过 `MAIMEMO_PLAYWRIGHT_MODULE` 指向其 `index.mjs`，并可通过 `MAIMEMO_BROWSER_EXECUTABLE` 指定浏览器可执行文件。设置 `MAIMEMO_SCREENSHOT_DIR` 可导出浅色、深色、窄屏与设置页截图。此测试不属于扩展运行时。
 
-`npm run test:browser:chromium` 使用仅有 `chrome` API 的模拟环境执行同一套回归。`npm run test:extension` 则将 `dist/chromium` 作为真实扩展加载，测试原生存储、内容脚本注入、扩展页面 CSP、弹窗和设置同步；需要完整 Chromium，不能使用 headless-shell，可通过 `MAIMEMO_EXTENSION_BROWSER_EXECUTABLE` 指定路径。详见 [开发与测试](CONTRIBUTING.md)。
+`npm run test:browser:chromium` 使用仅有 `chrome` API 的模拟环境执行同一套回归。`npm run test:extension` 则将 `dist/chromium` 作为真实扩展加载，测试原生存储、内容脚本注入、扩展页面 CSP、弹窗和设置同步；另用背景条纹的实际像素验证折射位移、文字清晰度和作用范围，避免只检查组件是否存在。需要完整 Chromium，不能使用 headless-shell，可通过 `MAIMEMO_EXTENSION_BROWSER_EXECUTABLE` 指定路径。详见 [开发与测试](CONTRIBUTING.md)。
 
 浏览器测试用本地拦截的模拟页面验证初始加载、异步勾选、仅进入一次、净化恢复、三色按钮、悬停提示、真实键盘事件、路由切换、主题、设置页和弹窗。布局覆盖 320 / 390 / 800 / 1440 / 1880 像素宽度，检查释义出现前后的单词与音标坐标、满高满宽、头部控件不重叠、原生侧栏切换、长释义与例句内部滚动，以及离开学习路由后的布局还原。示例单词为测试数据；测试不登录墨墨，不提交实际复习记录。墨墨更新页面结构后，仍需在实际学习页复核兼容性。
 

@@ -11,6 +11,7 @@ function status(message, error = false) {
 
 function render(settings) {
   document.documentElement.dataset.theme = settings.appearance.theme;
+  document.documentElement.dataset.glass = settings.appearance.glass;
   document.querySelector('#enabled').checked = settings.enabled;
   document.querySelector('#enabled').disabled = false;
   for (const button of themeButtons) button.setAttribute('aria-pressed', String(button.dataset.themeValue === settings.appearance.theme));

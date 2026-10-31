@@ -2,7 +2,7 @@
 
 ## 定位与当前版本
 
-墨墨学习助手是为 MaiMemo 网页学习页提供键盘操作和桌面阅读布局的 Manifest V3 扩展。当前工作树版本为 **0.3.1**，支持 Firefox / Zen 与 Chrome / Edge 两个构建目标。开发源目录以本文件上级的仓库根目录为准。
+墨墨学习助手是为 MaiMemo 网页学习页提供键盘操作和桌面阅读布局的 Manifest V3 扩展。当前工作树版本为 **0.3.3**，支持 Firefox / Zen 与 Chrome / Edge 两个构建目标。开发源目录以本文件上级的仓库根目录为准。
 
 用户入口与安装方法在 `README.md`；协作规则在 `AGENTS.md`；开发命令在 `CONTRIBUTING.md`；接管和首次 GitHub 发布步骤在 `docs/HERMES_HANDOFF.md`。
 
@@ -50,6 +50,7 @@
 | P0 | Hermes 审阅全部未提交及未跟踪源码，确定项目自身开源协议 | 已审阅；MIT License 已加入根目录 |
 | P0 | 处理官网图标公开再分发条件并保留第三方说明 | 已按用途区分：保留为扩展运行时资源，不作为仓库 Logo；需随公开发布保留来源和权利边界 |
 | P0 | 建立公开 GitHub 仓库、首个完整提交和双版本 Release | 仓库、`main`、源码提交和 `v0.3.1` Release 均已完成；两个 ZIP 资产已核对 |
+| P1 | 修正 Chrome 的 Liquid Glass 背景采样与系统透明度覆盖 | 0.3.2 修正、0.3.3 恢复中性配色；待提交和发布 |
 | P1 | Google Chrome / Microsoft Edge 品牌浏览器与 Firefox / Zen 的真实学习页人工回归 | 待人工验证 |
 | P1 | 为 GitHub 增加自动测试与双目标打包流水线 | 待维护者安排 |
 | P2 | 收集实际网站结构变化并维护 DOM 选择器 | 持续维护 |

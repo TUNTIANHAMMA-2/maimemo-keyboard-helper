@@ -61,6 +61,7 @@ test('all runtime versions and current README links change while history and dep
 class FakeGitHub {
   constructor() { this.value = null; this.events = []; this.failSecondUpload = false; this.latestVersion = 'v0.3.4'; }
   async release() { return this.value; }
+  async getRelease() { return this.value; }
   async latest() { return { tag_name: this.latestVersion }; }
   async create() { this.events.push('create'); return this.value = { id: 1, draft: true, assets: [], html_url: 'release-url' }; }
   async matches(asset, file) { return asset.digest === `sha256:${file.sha256}` && asset.size === file.data.length; }
@@ -109,9 +110,50 @@ test('published assets cannot be silently replaced and an older retry cannot bec
 });
 
 test('only an actual 404 is optional and writes require a token', async () => {
-  const missing = new GitHub('owner/repo', undefined, async () => new Response('', { status: 404 }));
+  const missing = new GitHub('owner/repo', undefined, async url => new URL(url).pathname.includes('/releases/tags/')
+    ? new Response('', { status: 404 }) : Response.json([]));
   assert.equal(await missing.release('v0.3.5'), null);
   await assert.rejects(missing.publish(1, true), /GH_TOKEN/);
   const outage = new GitHub('owner/repo', 'test-only', async () => new Response('outage', { status: 503 }));
   await assert.rejects(outage.release('v0.3.5'), /HTTP 503/);
+});
+
+test('new and resumed drafts publish through their ID when the tag endpoint returns 404', async () => {
+  const files = [fixtureFile('firefox'), fixtureFile('chromium')];
+  const asset = file => ({ id: file.name, name: file.name, size: file.data.length, digest: `sha256:${file.sha256}` });
+  for (const resume of [false, true]) {
+    const draft = () => ({ id: 42, tag_name: 'v0.3.5', draft: true, assets: [], html_url: 'release-url',
+      upload_url: 'https://uploads.github.com/repos/owner/repo/releases/42/assets{?name,label}' });
+    let value = resume ? { ...draft(), assets: [asset(files[0])] } : null;
+    let created = 0, readsByID = 0, uploads = 0;
+    const api = new GitHub('owner/repo', 'test-only', async (input, options) => {
+      const url = new URL(input);
+      const path = url.pathname.replace('/repos/owner/repo', '');
+      if (options.method === 'GET' && path.startsWith('/releases/tags/')) return new Response('', { status: 404 });
+      if (options.method === 'GET' && path === '/releases') return Response.json(value ? [value] : []);
+      if (options.method === 'GET' && path === '/releases/latest') return Response.json({ tag_name: 'v0.3.4' });
+      if (options.method === 'GET' && path === '/releases/42') { readsByID++; return Response.json(value); }
+      if (options.method === 'POST' && path === '/releases/generate-notes') return Response.json({ body: 'notes' });
+      if (options.method === 'POST' && path === '/releases') { created++; value = draft(); return Response.json(value); }
+      if (options.method === 'POST' && path === '/releases/42/assets') {
+        const file = files.find(file => file.name === url.searchParams.get('name'));
+        assert.deepEqual(options.body, file.data);
+        const uploaded = asset(file);
+        value.assets.push(uploaded);
+        uploads++;
+        return Response.json(uploaded);
+      }
+      if (options.method === 'PATCH' && path === '/releases/42') {
+        assert.equal(value.assets.length, 2, 'both assets must exist before publishing');
+        value.draft = false;
+        return Response.json(value);
+      }
+      assert.fail(`Unexpected API call: ${options.method} ${url}`);
+    });
+    assert.equal(await publishAssets(api, { version: '0.3.5' }, files, 'commit'), 'release-url');
+    assert.equal(created, resume ? 0 : 1);
+    assert.equal(uploads, resume ? 1 : 2);
+    assert.equal(readsByID, 1);
+    assert.equal(value.draft, false);
+  }
 });

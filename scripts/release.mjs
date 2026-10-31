@@ -68,7 +68,19 @@ export class GitHub {
     if (!response.ok) throw new Error(`GitHub ${method} ${path}: HTTP ${response.status} ${(await response.text()).slice(0, 1000)}`);
     return response.status === 204 ? null : response.json();
   }
-  release(tag) { return this.api('GET', `/releases/tags/${tag}`, undefined, true); }
+  async release(tag) {
+    const published = await this.api('GET', `/releases/tags/${tag}`, undefined, true);
+    if (published) return published;
+    // The tag endpoint only returns published releases. Drafts are visible in
+    // the authenticated release list, including interrupted uploads to resume.
+    for (let page = 1; ; page++) {
+      const releases = await this.api('GET', `/releases?per_page=100&page=${page}`);
+      const draft = releases.find(release => release.tag_name === tag);
+      if (draft) return draft;
+      if (releases.length < 100) return null;
+    }
+  }
+  getRelease(id) { return this.api('GET', `/releases/${id}`); }
   latest() { return this.api('GET', '/releases/latest', undefined, true); }
   async create(tag, previousTag, commit) {
     const notes = await this.api('POST', '/releases/generate-notes', {
@@ -111,7 +123,7 @@ export async function publishAssets(api, metadata, files, commit) {
     if (existing) await api.removeAsset(existing.id);
     await api.upload(release, file);
   }
-  release = await api.release(tag);
+  release = await api.getRelease(release.id);
   for (const file of files) {
     const asset = release.assets.find(a => a.name === file.name);
     if (!asset || !await api.matches(asset, file)) throw new Error(`Uploaded asset did not verify: ${file.name}`);

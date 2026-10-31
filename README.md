@@ -2,7 +2,7 @@
 
 面向墨墨背单词网页版的 Manifest V3 扩展。提供可配置键盘操作、自动进入学习、全屏净化、阅读卡片、Mac 风格三色按钮和明暗主题。网页操作使用原生 JavaScript，玻璃背景单独使用 `liquid-glass-react`，不接管网站组件。
 
-项目文档：[项目总览与待办](docs/PROJECT.md) · [Hermes 接管说明](docs/HERMES_HANDOFF.md) · [开发与测试](CONTRIBUTING.md) · [版本记录](CHANGELOG.md)。
+使用与开发：[开发与测试](CONTRIBUTING.md) · [版本记录](CHANGELOG.md) · [第三方许可证](docs/third-party-licenses.txt)。
 
 ## 预览
 
@@ -119,7 +119,7 @@ popup/       快速开关与主题切换
 tests/       无依赖单元测试与可选浏览器模拟测试
 scripts/     语法检查与扩展打包
 ui/          Liquid Glass 背景适配层源代码
-docs/        项目管理、交接、用户脚本、截图与第三方资源说明
+docs/        图标权利、第三方许可证、玻璃说明、截图与用户脚本来源
 dist/        生成的双版本安装目录（不提交 Git）
 releases/    生成的双版本 ZIP（不提交 Git）
 ```

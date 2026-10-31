@@ -2,7 +2,7 @@
 
 ## 环境和入口
 
-Node.js 22.15+、npm。先读 `AGENTS.md` 和 `docs/PROJECT.md`。运行 `npm ci --ignore-scripts` 安装锁定依赖；所有扩展运行代码本地打包，不从 CDN 加载脚本。
+Node.js 22.15+、npm。先读本仓库的 `README.md`。运行 `npm ci --ignore-scripts` 安装锁定依赖；所有扩展运行代码本地打包，不从 CDN 加载脚本。
 
 网站交互保持原生 JavaScript；React 只绘制装饰背景。不要将网站 DOM 交给本项目 React 管理，也不要直接调用网站内部 React 状态或未公开 API。
 

@@ -6,7 +6,8 @@ import { parseArgs } from 'node:util';
 export const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 export const targets = Object.freeze(['firefox', 'chromium']);
 const distRoot = resolve(projectRoot, 'dist');
-const runtimeEntries = ['assets', 'core', 'content', 'options', 'popup', 'README.md', 'LICENSE', 'AGENTS.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'docs'];
+// Runtime files plus the license/notice files that must travel with a distributed copy.
+const runtimeEntries = ['assets', 'core', 'content', 'options', 'popup', 'README.md', 'LICENSE', 'CHANGELOG.md', 'docs/third-party-licenses.txt', 'docs/brand-assets.md'];
 
 export function targetManifest(source, target) {
   if (!targets.includes(target)) throw new Error(`Unknown browser target: ${target}`);

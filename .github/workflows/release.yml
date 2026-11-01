@@ -1,98 +1,130 @@
-name: Test and release
+name: Recover failed v0.3.5 release
+run-name: Recover v0.3.5 from the validated artifacts of run 41220068514
 
 on:
-  pull_request:
-    branches: [main]
-  pull_request_target:
-    branches: [main]
-    types: [closed]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: read
 
 concurrency:
-  group: release-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  group: release-main
   cancel-in-progress: false
 
 jobs:
-  build:
-    if: github.event_name != 'pull_request_target' || github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    outputs:
-      should_release: ${{ steps.prepare.outputs.should_release }}
-      source_sha: ${{ steps.prepare.outputs.source_sha }}
-      version: ${{ steps.prepare.outputs.version }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # Never check out an unmerged PR head in a privileged target event.
-          ref: ${{ github.event_name == 'pull_request' && github.sha || 'main' }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-          cache: npm
-      - name: Prepare release version
-        id: prepare
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/release.mjs prepare "$RUNNER_TEMP/release-payload"
-      - name: Install and check
-        if: github.event_name == 'pull_request' || steps.prepare.outputs.should_release == 'true'
-        run: |
-          npm ci --ignore-scripts --no-audit --no-fund
-          npm test
-          npm run check
-          npm run build
-      - name: Install isolated browser tooling
-        if: github.event_name == 'pull_request' || steps.prepare.outputs.should_release == 'true'
-        run: |
-          npm install --prefix "$RUNNER_TEMP/browser-tests" --no-package-lock --ignore-scripts playwright@1.62.1
-          node "$RUNNER_TEMP/browser-tests/node_modules/playwright/cli.js" install --with-deps --no-shell chromium
-          echo "MAIMEMO_PLAYWRIGHT_MODULE=$RUNNER_TEMP/browser-tests/node_modules/playwright/index.mjs" >> "$GITHUB_ENV"
-          browser=$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/browser-tests/node_modules/playwright")
-          echo "MAIMEMO_BROWSER_EXECUTABLE=$browser" >> "$GITHUB_ENV"
-          echo "MAIMEMO_EXTENSION_BROWSER_EXECUTABLE=$browser" >> "$GITHUB_ENV"
-      - name: Browser and native extension regression
-        if: github.event_name == 'pull_request' || steps.prepare.outputs.should_release == 'true'
-        run: node scripts/test-browser-ci.mjs
-      - name: Package both browsers
-        if: steps.prepare.outputs.should_release == 'true'
-        run: |
-          npm run zip -- --output-dir "$RUNNER_TEMP/release-payload"
-          node scripts/release.mjs bundle "$RUNNER_TEMP/release-payload"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: github.event_name != 'pull_request' && steps.prepare.outputs.should_release == 'true'
-        with:
-          name: release-payload-${{ github.run_id }}
-          path: ${{ runner.temp }}/release-payload/
-          retention-days: 7
-          overwrite: true
-
-  publish:
-    needs: build
-    if: github.event_name != 'pull_request' && needs.build.outputs.should_release == 'true'
+  recover:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.build.outputs.source_sha }}
+          ref: main
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - name: Retrieve the original validated release payload
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-payload-${{ github.run_id }}
-          path: ${{ runner.temp }}/release-payload
-      - name: Publish validated commit and release
+          name: release-payload-41220068514
+          run-id: 41220068514
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/recovery-payload
+      - name: Check both original browser ZIPs
+        env:
+          PAYLOAD_DIR: ${{ runner.temp }}/recovery-payload
+        run: |
+          python - <<'PY'
+          import json, os, zipfile
+          from pathlib import Path
+          directory = Path(os.environ['PAYLOAD_DIR'])
+          for target in ['firefox', 'chromium']:
+              with zipfile.ZipFile(directory / f'maimemo-keyboard-helper-{target}-0.3.5.zip') as archive:
+                  assert archive.testzip() is None
+                  manifest = json.loads(archive.read('manifest.json'))
+                  assert manifest['version'] == '0.3.5'
+                  assert manifest['permissions'] == ['storage']
+                  if target == 'chromium':
+                      assert 'browser_specific_settings' not in manifest
+          print('Both original ZIPs passed CRC, version and manifest checks.')
+          PY
+      - name: Verify original source and attachments, then resume the draft
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/release.mjs publish "$RUNNER_TEMP/release-payload"
+          PAYLOAD_DIR: ${{ runner.temp }}/recovery-payload
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { execFileSync } from 'node:child_process';
+          import { appendFile, readFile } from 'node:fs/promises';
+          import { resolve } from 'node:path';
+          import { GitHub, publishAssets } from './scripts/release.mjs';
+
+          const repository = 'TUNTIANHAMMA-2/maimemo-keyboard-helper';
+          assert.equal(process.env.GITHUB_REPOSITORY, repository);
+          assert.equal(process.env.GITHUB_ACTIONS, 'true');
+          const api = new GitHub(repository, process.env.GH_TOKEN);
+          const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+          const digest = data => createHash('sha256').update(data).digest('hex');
+          const directory = process.env.PAYLOAD_DIR;
+          const metadata = JSON.parse(await readFile(resolve(directory, 'metadata.json'), 'utf8'));
+          const mainBefore = git('rev-parse', 'origin/main');
+          assert.equal(metadata.repository, repository);
+          assert.equal(metadata.version, '0.3.5');
+          assert.equal(metadata.sourceSha, '280e3fbd128237c95626f9c93e6707d2cf13a355');
+          assert.equal(metadata.treeSha, '86f95012e0a808628a0b27988cb182425623fc84');
+          const run = await api.api('GET', '/actions/runs/41220068514');
+          assert.equal(run.event, 'pull_request_target');
+          assert.equal(run.path, '.github/workflows/release.yml');
+          assert.equal(run.conclusion, 'failure');
+          assert.equal(run.head_sha, '05130175de5d0cb454452a38c0cba803858520e2');
+
+          const tag = 'v0.3.5';
+          const commit = git('rev-parse', `${tag}^{commit}`);
+          assert.equal(commit, '8671eb323382b5bc8d964593db3b9d86515bc384');
+          assert.equal(git('rev-parse', `${tag}^{tree}`), metadata.treeSha);
+          assert.equal(git('rev-parse', `${commit}^`), metadata.sourceSha);
+          git('merge-base', '--is-ancestor', commit, mainBefore);
+          const patch = await readFile(resolve(directory, 'version.patch'));
+          assert.equal(digest(patch), metadata.patchSha256);
+          git('read-tree', metadata.sourceSha);
+          if (patch.length) git('apply', '--cached', resolve(directory, 'version.patch'));
+          assert.equal(git('write-tree'), metadata.treeSha);
+
+          const release = await api.release(tag);
+          assert.ok(release, 'the original draft must exist; do not create a replacement');
+          assert.equal(release.id, 430051672);
+          assert.equal(release.assets.length, 2);
+          const assetSnapshot = release.assets.map(asset => [asset.id, asset.name, asset.size, asset.digest]).sort();
+          const files = [];
+          for (const target of ['firefox', 'chromium']) {
+            const name = `maimemo-keyboard-helper-${target}-0.3.5.zip`;
+            const info = metadata.assets.find(asset => asset.name === name);
+            const data = await readFile(resolve(directory, name));
+            assert.ok(info);
+            assert.equal(data.length, info.bytes);
+            assert.equal(digest(data), info.sha256);
+            const file = { name, data, sha256: info.sha256 };
+            const uploaded = release.assets.find(asset => asset.name === name);
+            assert.ok(uploaded && await api.matches(uploaded, file), `Original uploaded ZIP differs: ${name}`);
+            files.push(file);
+          }
+
+          const latestBefore = await api.latest();
+          assert.equal(latestBefore.tag_name, 'v0.3.6');
+          const url = await publishAssets(api, metadata, files, commit);
+          const published = await api.getRelease(release.id);
+          assert.equal(published.draft, false);
+          assert.deepEqual(published.assets.map(asset => [asset.id, asset.name, asset.size, asset.digest]).sort(), assetSnapshot);
+          const latestAfter = await api.latest();
+          assert.equal(latestAfter.id, latestBefore.id);
+          assert.equal(latestAfter.tag_name, 'v0.3.6');
+          assert.equal(git('rev-parse', 'origin/main'), mainBefore);
+          assert.equal(git('rev-parse', `${tag}^{commit}`), commit);
+          console.log(`Recovered ${url}; latest remains ${latestAfter.tag_name}; both original ZIPs and the tag are unchanged.`);
+          await appendFile(process.env.GITHUB_STEP_SUMMARY,
+            `## Recovered v0.3.5\n\n${url}\n\nThe original tested source tree, ZIP hashes and uploaded asset IDs were verified. The existing draft is now public. Latest remains v0.3.6. No source branch or version tag was changed.\n`);
+          NODE

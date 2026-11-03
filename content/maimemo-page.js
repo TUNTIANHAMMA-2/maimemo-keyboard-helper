@@ -143,14 +143,18 @@
   }
 
   function syncMemoryHistory(activeRoot) {
-    const source = settings.appearance.redesign ? activeRoot?.querySelector('.rev-scroller .memo-history') : null;
-    const host = source?.textContent.trim() ? activeRoot.querySelector('.rev-top') : null;
+    const scroller = settings.appearance.redesign ? activeRoot?.querySelector('.rev-scroller') : null;
+    const header = [...(scroller?.children || [])].find((node) =>
+      node.matches('.rev-content-header') && node.textContent.trim() === '记忆历史');
+    const history = scroller?.querySelector('.memo-history');
+    const container = header?.nextElementSibling?.matches('.rev-content-container')
+      ? header.nextElementSibling : history?.closest('.rev-content-container');
+    const source = container || history;
+    const host = (header || source?.textContent.trim()) ? activeRoot.querySelector('.rev-top') : null;
     const hidden = new Set();
     if (host) {
-      const container = source.closest('.rev-content-container');
-      hidden.add(container || source);
-      const header = container?.previousElementSibling;
-      if (header?.matches('.rev-content-header') && header.textContent.trim() === '记忆历史') {
+      if (source) hidden.add(source);
+      if (header) {
         hidden.add(header);
         if (header.previousElementSibling?.matches('.rev-content-blank')) hidden.add(header.previousElementSibling);
       }
@@ -182,10 +186,11 @@
       historyPanel.append(heading, historyContent);
     }
     if (historyPanel.parentElement !== host) host.append(historyPanel);
-    const signature = source.outerHTML;
+    const signature = source?.outerHTML || '';
     if (signature !== historySignature) {
       // Keep React's source nodes in place so word changes and rerenders remain safe.
-      historyContent.replaceChildren(copyHistory(source));
+      const nodes = container ? container.childNodes : source ? [source] : [];
+      historyContent.replaceChildren(...[...nodes].map(copyHistory).filter(Boolean));
       historySignature = signature;
     }
   }

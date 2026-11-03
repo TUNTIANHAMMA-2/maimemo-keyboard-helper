@@ -218,6 +218,36 @@ async function checkMemoryHistory(page) {
   await idle(page);
 }
 
+async function checkFirstReviewHistory() {
+  const page = await pageFor();
+  await page.waitForSelector('#mm-study-toolbar');
+  await page.evaluate(() => {
+    const history = document.querySelector('#answer').content.querySelector('#native-memory-history');
+    const empty = document.createElement('taro-text-core');
+    empty.className = 'history-empty';
+    empty.textContent = '暂无记忆历史';
+    history.replaceWith(empty);
+  });
+  await reveal(page);
+  const panel = page.locator('.rev-top #mm-memory-history');
+  const nativeHeader = page.locator('.rev-scroller .rev-content-header').filter({ hasText: '记忆历史' });
+  const nativeEmpty = page.locator('.rev-scroller .history-empty');
+  assert.equal(await panel.count(), 1, 'the first review must place its history section in the left pane');
+  assert.equal(await panel.textContent(), '记忆历史暂无记忆历史', 'the sidebar must copy the native empty state');
+  assert.equal(await panel.locator('.memo-history').count(), 0, 'an empty state must not invent a review record');
+  assert.equal(await nativeHeader.isVisible(), false, 'the right pane must not retain the history heading');
+  assert.equal(await nativeEmpty.isVisible(), false, 'the right pane must not duplicate the empty state');
+  await page.evaluate(() => document.querySelector('.rev-scroller .history-empty').remove());
+  await frames(page);
+  assert.equal(await panel.textContent(), '记忆历史', 'an empty container still keeps its heading in the left pane');
+  assert.equal(await nativeHeader.isVisible(), false);
+  await change(page, { appearance: { redesign: false } });
+  assert.equal(await panel.count(), 0);
+  assert.equal(await nativeHeader.isVisible(), true, 'disabling the layout restores the native heading');
+  assert.equal(await page.locator('[data-mm-history-source]').count(), 0);
+  await page.close();
+}
+
 try {
   const page = await pageFor();
   await page.waitForSelector('#mm-study-toolbar');
@@ -400,6 +430,9 @@ try {
   console.log('study page: actions, suppression, input protection, accessibility, themes, tooltip updates and layout passed');
   console.log('layout: full viewport, stable reveal positions, native side tabs and isolated scrolling passed at 320/390/800/1440/1880 widths');
   console.log('memory history: source fidelity, live updates, native DOM ownership, word changes and restoration passed');
+
+  await checkFirstReviewHistory();
+  console.log('memory history: first-review empty state and heading placement passed');
 
   const firefoxBranch = await pageFor(studyHTML, undefined, `${appURL}#/pages/home/index`, true, {
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0'

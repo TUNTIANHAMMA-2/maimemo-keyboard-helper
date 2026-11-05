@@ -1,5 +1,9 @@
 # 版本记录
 
+## 0.3.8 — 2026-11-05
+
+- 本次合并的修复与改动见 [发布说明](https://github.com/TUNTIANHAMMA-2/maimemo-keyboard-helper/releases/tag/v0.3.8)。
+
 ## 0.3.7 — 2026-11-03
 
 - 本次合并的修复与改动见 [发布说明](https://github.com/TUNTIANHAMMA-2/maimemo-keyboard-helper/releases/tag/v0.3.7)。

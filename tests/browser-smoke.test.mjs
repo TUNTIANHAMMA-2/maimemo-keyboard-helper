@@ -156,15 +156,36 @@ async function checkLayout(page) {
 async function checkRevealPosition(page) {
   await page.evaluate(() => window.__fixture.recall());
   await frames(page);
+  await checkWordAndPhoneticCenter(page);
   const selectors = ['.rev-top .spelling', '.rev-top > .phonetic', '.back', '.rev-top-stats > taro-text-core:nth-of-type(1)', '.rev-top-stats > taro-text-core:nth-of-type(2)', ...['forget', 'vague', 'familiar'].map((action) => `[data-mm-action="${action}"]`)];
   assert.equal(await page.locator('#mm-traffic-controls button:disabled').count(), 3, 'all three buttons stay visible but cannot submit before reveal');
   const before = await Promise.all(selectors.map((selector) => page.locator(selector).boundingBox()));
   await reveal(page);
+  await checkWordAndPhoneticCenter(page);
   const after = await Promise.all(selectors.map((selector) => page.locator(selector).boundingBox()));
   assert.equal(await page.locator('#mm-traffic-controls button:enabled').count(), 3);
   for (let i = 0; i < selectors.length; i++) {
     for (const dimension of ['x', 'y', 'width', 'height']) assert.ok(Math.abs(before[i][dimension] - after[i][dimension]) < 1, `${selectors[i]} must not jump when revealing the definition`);
   }
+}
+
+async function checkWordAndPhoneticCenter(page) {
+  const centers = await page.evaluate(() => {
+    const pane = document.querySelector('.rev-top').getBoundingClientRect();
+    const word = document.querySelector('.rev-top .spelling');
+    const range = document.createRange();
+    range.selectNodeContents(word);
+    const wordText = range.getBoundingClientRect();
+    const phonetic = [...document.querySelector('.rev-top > .phonetic').children]
+      .map((child) => child.getBoundingClientRect());
+    return {
+      pane: pane.x + pane.width / 2,
+      word: wordText.x + wordText.width / 2,
+      phonetic: (Math.min(...phonetic.map((box) => box.left)) + Math.max(...phonetic.map((box) => box.right))) / 2,
+    };
+  });
+  assert.ok(Math.abs(centers.word - centers.pane) < 2, 'visible word text must be centered in the reading pane');
+  assert.ok(Math.abs(centers.phonetic - centers.pane) < 2, 'phonetic contents must be centered in the reading pane');
 }
 
 async function checkMemoryHistory(page) {
@@ -259,6 +280,7 @@ try {
   await page.locator('[data-mm-action="forget"]').evaluate((button) => button.click());
   assert.equal(await count(page, 'forget'), 0, 'disabled recall controls must not submit');
   const wordBefore = await page.locator('.rev-top .spelling').boundingBox();
+  await checkWordAndPhoneticCenter(page);
   assert.equal(await page.getAttribute('html', 'data-mm-theme'), 'light');
   assert.equal(await page.locator('.taro__toast').isVisible(), false);
   await screenshot(page, 'study-recall.png');
@@ -274,6 +296,7 @@ try {
   assert.ok(await page.locator('[data-mm-refraction="true"]').evaluateAll((nodes) => nodes.every((node) => getComputedStyle(node).backdropFilter.includes('url('))), 'the upstream SVG must sample the host backdrop');
   assert.equal(await page.locator('.rev-scroller .phrase-phrase').first().evaluate((node) => Boolean(node.closest('.mm-liquid-mount')) || getComputedStyle(node).filter !== 'none'), false, 'glass filters must not warp the learning text');
   const wordAfter = await page.locator('.rev-top .spelling').boundingBox();
+  await checkWordAndPhoneticCenter(page);
   assert.ok(Math.abs(wordBefore.y - wordAfter.y) < 1, 'revealing the answer must keep the word in place');
   await checkLayout(page);
   const positions = await page.locator('[data-mm-action]').evaluateAll((buttons) => Object.fromEntries(buttons.map((button) => [button.dataset.mmAction, button.getBoundingClientRect().x])));

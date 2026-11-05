@@ -1,0 +1,26 @@
+name: 功能或改进
+description: 调整布局、交互，或增加新能力
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        维护者提交或确认后，自动化会直接实现并开 PR；细节未定时会选择合理方案并在 PR 中说明。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 现在的问题
+      description: 当前哪里不方便，涉及的元素（如 `class="spelling"`）。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望效果
+      description: 怎样算完成；可以写“居中，或更好的方式”这种开放要求。
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图或示意

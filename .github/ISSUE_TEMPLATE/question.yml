@@ -1,0 +1,22 @@
+name: 提问或代码分析
+description: 想了解某段逻辑如何工作、是否可靠，不要求改代码
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        自动化会阅读源码和测试后直接在 Issue 中回答，不会改动代码。看完回答后如需修改，回复 `/fix` 或 `/implement`。
+  - type: textarea
+    id: question
+    attributes:
+      label: 问题
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 涉及的功能、页面或文件
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图

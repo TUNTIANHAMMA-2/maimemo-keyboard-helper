@@ -1,0 +1,42 @@
+name: 缺陷报告
+description: 扩展功能出错、失效或与说明不一致
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交后由本机自动化诊断；能复现并定位时会开修复 PR，等待维护者合并。截图可以直接拖进下方输入框。
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 现象
+      description: 实际看到了什么，期望是什么。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从打开页面开始的操作顺序；只在首次背词、断网后等特定情况出现的请写明。
+      placeholder: |
+        1. 打开学习页
+        2. 按下……
+        3. 出现……
+  - type: dropdown
+    id: without-extension
+    attributes:
+      label: 停用扩展后是否仍出现
+      options:
+        - 未测试
+        - 仍出现（可能是网页本身的问题）
+        - 不再出现
+  - type: input
+    id: environment
+    attributes:
+      label: 浏览器与扩展版本
+      placeholder: Chrome 140 / 扩展 v0.3.7
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图或录屏
+      description: 请先去掉账号等个人信息。

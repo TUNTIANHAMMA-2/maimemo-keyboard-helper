@@ -269,7 +269,66 @@ async function checkFirstReviewHistory() {
   await page.close();
 }
 
+async function checkTrafficSelection() {
+  const page = await pageFor();
+  await page.waitForSelector('#mm-traffic-controls');
+  const setWord = async (word, progress) => {
+    await page.evaluate(({ word, progress }) => {
+      window.__fixture.recall();
+      document.querySelector('.rev-top .spelling').textContent = word;
+      document.querySelector('.rev-top-stats > taro-text-core:nth-of-type(2)').textContent = progress;
+    }, { word, progress });
+    await frames(page);
+  };
+  const selected = async (action) => {
+    assert.equal(await page.locator('[data-mm-selected="true"]').count(), 1, 'exactly one choice is highlighted');
+    assert.equal(await page.getAttribute(`[data-mm-action="${action}"]`, 'aria-pressed'), 'true');
+    for (const other of ['forget', 'vague', 'familiar'].filter((item) => item !== action)) {
+      assert.equal(await page.getAttribute(`[data-mm-action="${other}"]`, 'aria-pressed'), 'false');
+    }
+    const appearance = await page.locator(`[data-mm-action="${action}"]`).evaluate((node) => ({
+      opacity: getComputedStyle(node, '::before').opacity,
+      shadow: getComputedStyle(node, '::before').boxShadow
+    }));
+    assert.equal(appearance.opacity, '1', 'selected color must remain bright even when feedback is disabled');
+    assert.notEqual(appearance.shadow, 'none', 'selected color must have a visible ring');
+  };
+  for (const [index, action] of ['familiar', 'vague', 'forget'].entries()) {
+    const word = `fixture-word-${index}`;
+    await setWord(word, `${index + 1}/300`);
+    assert.equal(await page.locator('[data-mm-selected="true"]').count(), 0, 'new word starts without a choice');
+    await reveal(page);
+    if (index === 1) await page.locator(`[data-feedback="${action}"]`).evaluate((button) => button.click());
+    else await page.locator(`[data-mm-action="${action}"]`).click();
+    await frames(page);
+    await selected(action);
+    await setWord('next-word', `${index + 2}/300`);
+    assert.equal(await page.locator('[data-mm-selected="true"]').count(), 0, 'next word must not inherit the previous color');
+    await setWord(word, `${index + 1}/300`);
+    assert.equal(await page.locator('#mm-traffic-controls button:disabled').count(), 3);
+    for (const width of [320, 390, 800, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await frames(page);
+      await selected(action);
+      const box = await page.locator(`[data-mm-action="${action}"]`).boundingBox();
+      assert.ok(box.x >= 0 && box.x + box.width <= width, 'selected control stays on screen');
+    }
+    await reveal(page);
+    await selected(action);
+    if (index === 0) {
+      await page.locator('[data-mm-action="forget"]').click();
+      await frames(page);
+      await selected('forget');
+      await setWord('next-word', '2/300');
+      await setWord(word, '1/300');
+      await selected('forget');
+    }
+  }
+  await page.close();
+}
+
 try {
+  await checkTrafficSelection();
   const page = await pageFor();
   await page.waitForSelector('#mm-study-toolbar');
   await page.waitForFunction(() => document.querySelector('#mm-brand-logo')?.naturalWidth > 0);

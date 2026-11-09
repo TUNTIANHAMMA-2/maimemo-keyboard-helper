@@ -24,6 +24,7 @@
   let checkboxPending = false;
   let retryTimer;
   let trafficControls;
+  const feedbackByWord = new Map();
   const activatedKeys = new Set();
 
   function setAttribute(node, name, value) {
@@ -214,6 +215,26 @@
     });
   }
 
+  function currentWordKey(activeRoot) {
+    const word = activeRoot?.querySelector('.rev-top .spelling')?.textContent.trim();
+    const progress = activeRoot?.querySelector('.rev-top-stats > taro-text-core:nth-of-type(2)')?.textContent.trim();
+    return word && progress ? `${progress}\u0000${word}` : null;
+  }
+
+  // Capture native feedback as well as clicks forwarded by the traffic lights and shortcuts.
+  // The site can remove its buttons synchronously when it advances to the next word.
+  document.addEventListener('click', (event) => {
+    if (!settings || location.hash.split('?')[0] !== '#/pages/home/index') return;
+    const native = event.target instanceof Element ? event.target.closest('.rev-resp-btns .reset-button') : null;
+    const activeRoot = native?.closest('.rev-root');
+    const definition = feedback.find((item) => native && labelFor(native, item));
+    const key = currentWordKey(activeRoot);
+    if (key && definition && feedbackTarget(activeRoot, definition) === native) {
+      feedbackByWord.set(key, definition.action);
+      syncTrafficControls(activeRoot);
+    }
+  }, true);
+
   function syncTrafficControls(activeRoot) {
     if (!activeRoot || !settings.appearance.trafficLights) {
       trafficControls?.remove();
@@ -241,6 +262,8 @@
       }
     }
     if (trafficControls.parentElement !== activeRoot) activeRoot.append(trafficControls);
+    const selected = feedbackByWord.get(currentWordKey(activeRoot));
+    setAttribute(trafficControls, 'data-mm-has-selection', String(Boolean(selected)));
     for (const definition of feedback) {
       const button = trafficControls.querySelector(`[data-mm-action="${definition.action}"]`);
       const target = feedbackTarget(activeRoot, definition);
@@ -251,6 +274,9 @@
       const tooltip = [label, shortcut, target ? prediction : '先显示答案后可用'].filter(Boolean).join(' · ');
       setAttribute(button, 'data-mm-tooltip', tooltip);
       setAttribute(button, 'aria-label', tooltip);
+      setAttribute(button, 'aria-pressed', String(selected === definition.action));
+      if (selected === definition.action) setAttribute(button, 'data-mm-selected', 'true');
+      else button.removeAttribute('data-mm-selected');
       if (button.disabled !== !target) {
         if (!target && document.activeElement === button) button.blur();
         button.disabled = !target;
@@ -286,6 +312,7 @@
     pending = false;
     if (!settings || !document.documentElement) return;
     if (lastRoute !== location.hash) {
+      if (location.hash.split('?')[0] !== '#/pages/home/index') feedbackByWord.clear();
       lastRoute = location.hash;
       startClicked = false;
       checkboxClicked = false;

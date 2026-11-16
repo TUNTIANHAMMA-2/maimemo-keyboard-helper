@@ -506,6 +506,11 @@
 
 :root[data-mm-study="true"] #mm-traffic-controls [data-mm-action]:disabled { cursor: not-allowed; }
 :root[data-mm-study="true"] #mm-traffic-controls [data-mm-action]:disabled::before { opacity: .55; }
+:root[data-mm-study="true"][data-mm-traffic="true"] #mm-traffic-controls [data-mm-selected="true"]::before {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--mm-surface), 0 0 0 4px var(--mm-dot), 0 2px 5px #0004;
+}
+:root[data-mm-study="true"][data-mm-traffic="true"] #mm-traffic-controls[data-mm-has-selection="true"] [data-mm-action]:not([data-mm-selected="true"])::before { opacity: .35; }
 
 #mm-study-toolbar {
   box-sizing: border-box;

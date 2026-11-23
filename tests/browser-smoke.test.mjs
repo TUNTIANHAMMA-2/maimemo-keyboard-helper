@@ -157,6 +157,7 @@ async function checkRevealPosition(page) {
   await page.evaluate(() => window.__fixture.recall());
   await frames(page);
   await checkWordAndPhoneticCenter(page);
+  assert.equal(await page.locator('.rev-top .interp-ctn').count(), 0, 'definition must remain absent until reveal');
   const selectors = ['.rev-top .spelling', '.rev-top > .phonetic', '.back', '.rev-top-stats > taro-text-core:nth-of-type(1)', '.rev-top-stats > taro-text-core:nth-of-type(2)', ...['forget', 'vague', 'familiar'].map((action) => `[data-mm-action="${action}"]`)];
   assert.equal(await page.locator('#mm-traffic-controls button:disabled').count(), 3, 'all three buttons stay visible but cannot submit before reveal');
   const before = await Promise.all(selectors.map((selector) => page.locator(selector).boundingBox()));
@@ -166,9 +167,11 @@ async function checkRevealPosition(page) {
   const phonetic = await page.locator('.rev-top > .phonetic').boundingBox();
   const definition = await page.locator('.rev-top .interp-ctn').boundingBox();
   const width = page.viewportSize().width;
-  const minimumGap = width <= 700 ? 23 : width <= 900 ? 31 : 95;
+  const minimumGap = width <= 700 ? 39 : width <= 900 ? 47 : 199;
   assert.ok(definition.y - (phonetic.y + phonetic.height) >= minimumGap,
     `definition must sit below the phonetic with a deliberate gap at ${width}px`);
+  if (width > 900) assert.ok(definition.y >= page.viewportSize().height / 2,
+    `definition must sit in the lower half of the desktop viewport at ${width}px`);
   assert.equal(await page.locator('#mm-traffic-controls button:enabled').count(), 3);
   for (let i = 0; i < selectors.length; i++) {
     for (const dimension of ['x', 'y', 'width', 'height']) assert.ok(Math.abs(before[i][dimension] - after[i][dimension]) < 1, `${selectors[i]} must not jump when revealing the definition`);

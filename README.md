@@ -1,118 +1,52 @@
-# 墨墨学习助手（Firefox / Zen / Chrome / Edge）
+# 墨墨学习助手
 
-面向墨墨背单词网页版的 Manifest V3 扩展。提供可配置键盘操作、自动进入学习、全屏净化、阅读卡片、Mac 风格三色按钮和明暗主题。网页操作使用原生 JavaScript，玻璃背景单独使用 `liquid-glass-react`，不接管网站组件。
+面向墨墨背单词网页版的浏览器扩展（Firefox / Zen / Chrome / Edge），提供可配置快捷键、释义页原地拼写、三色操作按钮、专注布局和明暗主题。
 
-使用与开发：[开发与测试](CONTRIBUTING.md) · [版本记录](CHANGELOG.md) · [第三方许可证](docs/third-party-licenses.txt)。
+详细开发与版本记录见 [开发与测试](CONTRIBUTING.md) · [版本记录](CHANGELOG.md) · [第三方许可证](docs/third-party-licenses.txt)。
 
 ## 预览
 
 | 学习页（浅色） | 学习页（深色） |
 | :---: | :---: |
-| ![浅色学习页：左侧青色渐变、满高布局与三色按钮](docs/screenshots/study-light.png) | ![深色学习页：Liquid Glass 面板与记忆历史](docs/screenshots/study-dark.png) |
+| ![浅色学习页](docs/screenshots/study-light.png) | ![深色学习页](docs/screenshots/study-dark.png) |
 
 | 窄屏 390px | 设置页 |
 | :---: | :---: |
 | ![窄屏学习页](docs/screenshots/study-mobile.png) | ![扩展设置页](docs/screenshots/settings.png) |
 
-可直接编辑快捷键和常用开关的操作面板：
-
-![可编辑扩展操作面板，底部常驻重新应用与状态反馈](docs/screenshots/popup.png)
-
-## 0.3.13 浏览器版本
-
-同一份源码生成两个版本：`firefox` 用于 Firefox / Zen，`chromium` 用于 Chrome / Edge。设置、图标和打开设置页的操作同时支持 `browser` 与 `chrome` API；Chromium 清单去掉 Gecko 专用字段，最低 Chromium 版本设为 120。
-
-| 浏览器 | 开发载入目录 | 分发文件 |
-| --- | --- | --- |
-| Firefox / Zen | `dist/firefox` | `maimemo-keyboard-helper-firefox-0.3.13.zip` |
-| Chrome / Edge | `dist/chromium` | `maimemo-keyboard-helper-chromium-0.3.13.zip` |
-
-0.3.12–0.3.13 新增释义页 Keybr 风格原地单词拼写：显示答案后在原单词位置直接敲键盘默写（默认隐藏原词，`Tab` 临时偷看，`Backspace` 退格修正，`Esc` 清空）；遮挡页保持完全隔离，不影响任何自定义快捷键；拼写完成后自动把键盘权限移交给记忆快捷键，并在学习页顶部工具栏、弹窗和完整设置页提供独立开关。
-
-0.3.4 修复三色按钮仅在释义页出现造成的跳动：回忆阶段保留禁用圆点，关闭后返回与计数靠左。扩展弹窗可直接编辑和保存快捷键、调整常用开关，并重新应用页面。网页颜色沿用 0.3.3。
-
-0.3.3 恢复上一版的白灰／深灰蓝配色，右侧使用均匀底色，撤销新增的蓝紫渐变；左侧青色渐变和已修正的玻璃背景采样保留。
-
-0.3.2 修正 Chrome 中只有磨砂底色、没有实际背景折射的问题：将库生成的 SVG 接到面板自身的背景采样，移除内层叠加模糊和 12% 的折射层透明度限制。增加背景纹理位移与前景文字不变的像素回归。
-
-## 外观与布局
-
-官网猫头鹰图标按透明原貌等比例显示，移除额外添加的绿色背景、内边距、圆角和阴影。图像随扩展打包，来源记录见 [官网图标](docs/brand-assets.md)。
-
-将原新拟态外观替换为指定的 [Liquid Glass React](https://github.com/rdev/liquid-glass-react) 组件，应用于导航、释义、记忆历史、阅读区、主题按钮和扩展界面。玻璃单独渲染在背景层，正文、原生按钮和事件保留；关闭弹性位移，保持单词与控件的位置稳定。左侧青色渐变、Arial 常规字重、红色目标词和记忆历史位置沿用。
-
-上游说明 Firefox / Safari 只能部分支持效果：不显示折射位移，仍保留模糊和边缘高光。设置页新增“玻璃效果”：默认“完整 Liquid Glass”，也可选“跟随系统”或“纯色背景”。“跟随系统”会在系统启用“降低透明度”时使用更实的底色；完整模式按扩展中的明确选择显示。具体接入方式、版本与许可证见 [Liquid Glass 接入记录](docs/liquid-glass.md)。
-
-顶部两段文字保持移除，主题按钮整合在页内工具栏。学习区铺满可用宽高，原生导航位于左侧；单词和音标在左侧阅读区居中展示，并在揭晓释义前后保持固定位置。宽屏释义卡片下移至阅读区下半部附近，需主动向下看才能核对；窄屏保留较小但明显的间距，释义超出区域时可在左侧滚动查看。长释义、记忆历史和例句可在内部滚动，滚动条隐藏。
-
 ## 功能
 
-- 将“自动跳过网页版公测说明”和“Web 学习页净化”两个用户脚本的功能整合进同一个扩展，来源与迁移说明见 [整合记录](docs/integrated-userscripts.md)。
-- 自动进入：检查“我已阅读”的状态，勾选后等待页面渲染再点击“开始学习”；不反复点击，也不处理登录。
-- 专注布局：隐藏官网导航和页脚，将学习 iframe 铺满窗口；没有学习框架时保留官网布局。
-- 阅读卡片：重排单词、音标、释义、例句、助记与词典区域，支持窄屏和内容滚动。
-- 三色按钮：回忆与释义页面常驻左上角，显示答案前禁用，关闭后收回预留空位。依次是红色 **忘记**、黄色 **模糊**、绿色 **认识**。本次学习中选过的单词返回时会高亮上次选择，重新选择后同步更新；记录只保留在当前页面会话中。悬停或键盘聚焦时显示动作、当前快捷键和网页提供的复习间隔；Tab 可聚焦，Enter / Space 可激活。
-- 主题：**跟随系统 / 浅色 / 深色**。学习页工具栏右侧的主题按钮按此顺序切换；扩展弹窗和设置页也支持明暗主题。
-- 原地拼写：仅在显示答案（释义页）后原地复用单词位置激活，遮挡页完全不拦截快捷键。默认隐藏原词进入默写，支持 `Tab` 临时查看原词；打错标红并继续推进，支持 `Backspace` 退格修正与 `Esc` 清空；拼写完成后自动停止输入拦截，把权限移交给记忆快捷键。
-- 可独立关闭自动进入、全屏净化、隐藏 toast、阅读卡片、三色按钮、原地拼写和快捷键。
+- **键盘快捷键**：支持自定义“显示答案 / 认识 / 模糊 / 忘记 / 熟知”，按住不重复触发，输入框与中文输入法中自动让路。
+- **释义页原地拼写**：显示答案后在原单词位置直接敲键盘拼写（默认隐藏原词进入默写，`Tab` 临时查看原词，`Backspace` 退格，`Esc` 清空）；遮挡页不拦截按键；拼写完成后自动把键盘权限交还给记忆快捷键。
+- **三色操作按钮**：左上角常驻 **忘记 / 模糊 / 认识**，悬停显示快捷键与复习间隔，返回上一词时高亮已选状态。
+- **专注布局与主题**：隐藏官网导航和页脚，支持跟随系统 / 浅色 / 深色与 Liquid Glass 玻璃效果（可在顶部工具栏、弹窗或设置页随时切换）。
+- **自动进入**：自动勾选公测说明页“我已阅读”并点击“开始学习”。
 
 ## 默认快捷键
 
 | 按键 | 动作 |
 | --- | --- |
-| Space | 显示答案 |
-| 1 | 认识 |
-| 2 | 模糊 / 不确定 |
-| 3 | 忘记 / 不认识 |
-| 4 | 熟知 |
+| `Space` | 显示答案 |
+| `1` | 认识 |
+| `2` | 模糊 / 不确定 |
+| `3` | 忘记 / 不认识 |
+| `4` | 熟知 |
 
-反馈动作需要先显示答案；按住按键只触发一次，并抑制网页内置按键的重复提交。输入框、选择框、可编辑文本和中文输入法组合输入中不拦截按键。
+## 0.3.13 浏览器版本
 
-点击扩展图标即可编辑快捷键：点击按键框，使用英文输入模式按单键或组合键，再点“保存快捷键”。Delete 清空，Esc 撤销本项编辑；“默认快捷键”先填入默认值，保存后生效。也可通过“完整设置”打开全部设置页。重复的按键不会保存；录制字母时请使用英文输入模式。旧版本的自定义按键会保留。停用自定义快捷键后，网站自己的快捷键仍按网站设置工作。
+| 浏览器 | 开发载入目录 | 发布安装包 |
+| --- | --- | --- |
+| Firefox / Zen | `dist/firefox` | `maimemo-keyboard-helper-firefox-0.3.13.zip` |
+| Chrome / Edge | `dist/chromium` | `maimemo-keyboard-helper-chromium-0.3.13.zip` |
 
-## 弹窗常用操作
+- **Firefox / Zen**：打开 `about:debugging#/runtime/this-firefox` → “临时载入附加组件”，选择 `dist/firefox/manifest.json`（或 Firefox ZIP）。
+- **Chrome / Edge**：打开 `chrome://extensions` 或 `edge://extensions`，开启“开发者模式” → “加载已解压的扩展程序”，选择 `dist/chromium`（或解压后的 Chromium ZIP 目录）。
 
-- 主题、玻璃效果、三色按钮、阅读卡片、快捷键总开关、释义页原地拼写、释义页隐藏原词、自动进入、学习区铺满窗口和隐藏浮动提示可直接在弹窗调整，开关即时保存。
-- 快捷键编辑独立保存，切换其他设置不会丢失草稿；重复按键会提示并阻止保存，失败后保留编辑供重试。
-- “重新应用页面”向当前墨墨学习页重新应用已保存的外观和控件，不刷新网页、不更改记忆数据或重置快捷键。若提示页面未连接，先刷新墨墨学习页再重试。
-- “重新读取设置”用于读取失败后重试，也会保留当前未保存的快捷键草稿。
+两个版本都需先停用 Tampermonkey 中原来的脚本，然后打开 `https://www.maimemo.com/home/web_study` 或 `https://tc-apis.maimemo.com/webstudy/app` 使用。
 
-## 载入与更新
+## 本地开发与验证
 
-### Firefox / Zen
-
-打开 `about:debugging#/runtime/this-firefox`，选择“临时载入附加组件”，载入 `dist/firefox/manifest.json` 或 Firefox ZIP。开发时也可继续使用根目录的 `manifest.json`。更新后点击“重新载入”，再刷新学习页。临时扩展在浏览器重启后需要重新载入。
-
-### Chrome / Edge
-
-1. 使用生成的 `dist/chromium`，或先将 Chromium ZIP 解压到一个固定文件夹。
-2. Chrome 打开 `chrome://extensions`；Edge 打开 `edge://extensions`，开启“开发者模式”。
-3. 选择“加载已解压的扩展程序”，选择包含 `manifest.json` 的 Chromium 文件夹。
-4. 更新后在扩展管理页点击“重新加载”，再刷新学习页。请保留该文件夹，以便浏览器下次继续读取。
-
-Chrome / Edge 的本地安装流程见 [Chrome 官方教程](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked) 和 [Edge 官方教程](https://learn.microsoft.com/en-us/microsoft-edge/extensions/getting-started/extension-sideloading)。这两个浏览器共用 Chromium 包；不要选择仓库根目录作为 Chromium 安装目录。
-
-两个版本都应停用 Tampermonkey 中原来的两个脚本，然后打开 `https://www.maimemo.com/home/web_study` 或 `https://tc-apis.maimemo.com/webstudy/app`，正常登录使用。ZIP 尚未经过扩展商店签名或上架。各浏览器分别保存设置，不会跨浏览器自动迁移。请从当前扩展入口打开设置，旧的扩展内部地址可能失效。
-
-## 开发与验证
-
-### 合并后自动发布
-
-PR 合并到 `main` 后，GitHub Actions 的 **Test and release** 会在云端自动处理：
-
-1. 递增补丁版本号，并同步 `manifest.json`、`package.json`、锁文件、当前下载文件名和版本记录。
-2. 运行单元、语法、双浏览器构建、两种 API 模拟及原生 Chromium 扩展回归。
-3. 生成 Firefox／Zen 和 Chrome／Edge 两个 ZIP，验证后写回版本提交、创建版本标签并发布 GitHub Release。
-
-普通 PR 会预演版本更新并完成测试和 ZIP 打包，不写回分支或发布 Release；关闭但未合并的 PR 不发布。整个发布流程不调用任何模型、不需要 Hermes 在线，也不需要 OpenAI 或其他模型密钥。写入版本号使用 GitHub 自动提供的短期 `GITHUB_TOKEN`。
-
-在 **Actions → Test and release → Run workflow** 可补发当前 `main`，或重新运行失败的发布。同一已发布版本会跳过；未完成的草稿会继续上传，不覆盖已发布安装包。若验证期间 `main` 又更新，本轮会停止写入，下一轮或手动重跑会验证最新源码。连续快速合并可能合并为一次包含所有最新改动的发布。
-
-浏览器检查最多执行两次，首轮失败会打印并记录；连续失败不发布。发布先准备草稿，两个 ZIP 均校验成功后才公开。Actions 运行额度和存储按 GitHub 账户规则计算。
-
-Release 发布后，本地加载的扩展仍需下载新 ZIP、覆盖原安装目录，在浏览器扩展管理页重新加载，再刷新墨墨网页。此流程发布 GitHub 安装包，不包含扩展商店上架。
-
-需要 Node.js 22.15 或更新版本。运行文件已经包含预编译的玻璃组件；开发和重新打包时才需要 npm。
+需要 Node.js 22.15+（运行时已内置预编译的 `content/liquid-glass.js`，仅开发和打包需要 npm）：
 
 ```sh
 npm ci --ignore-scripts
@@ -120,42 +54,11 @@ npm run build
 npm test
 npm run check
 npm run zip
-# 只生成 Chrome / Edge 版
-npm run build:chromium
-npm run zip:chromium
-# 指定 ZIP 输出目录
-npm run zip -- --output-dir /path/to/outputs
 ```
 
-- `npm test`：快捷键解析、两种扩展 API 的设置迁移、配置局部更新、五个动作、重复抑制、输入保护、组合键、路由范围、双版本清单和权限。
-- `npm run check`：检查所有 JavaScript 语法。
-- `npm run build:glass`：将 React 与 Liquid Glass 组件打包到 `content/liquid-glass.js`，生成第三方许可证。预编译文件已包含在项目和扩展 ZIP 内，载入扩展时无需运行 npm 或访问 CDN。
-- `npm run build`：重建玻璃背景与 `dist/firefox`、`dist/chromium`。`dist` 是可重复生成的安装目录，构建时会重建对应子目录。
-- `npm run zip`：生成两个安装目录与两个 ZIP，默认写入本仓库的 `releases` 目录。打包使用 Node 标准库，支持 Windows、macOS 和 Linux，不再依赖 PowerShell；只打包运行文件与使用说明。
+- `npm run test:browser` / `npm run test:browser:chromium`：Playwright 模拟页面回归测试。
+- `npm run test:extension`：加载真实 `dist/chromium` 扩展的原生回归测试。
 
-可选浏览器测试：安装开发用 Playwright 和其 Chromium 后运行 `npm run test:browser`。已有 Playwright 环境可通过 `MAIMEMO_PLAYWRIGHT_MODULE` 指向其 `index.mjs`，并可通过 `MAIMEMO_BROWSER_EXECUTABLE` 指定浏览器可执行文件。设置 `MAIMEMO_SCREENSHOT_DIR` 可导出浅色、深色、窄屏与设置页截图。此测试不属于扩展运行时。
+## 权限与许可
 
-`npm run test:browser:chromium` 使用仅有 `chrome` API 的模拟环境执行同一套回归。`npm run test:extension` 则将 `dist/chromium` 作为真实扩展加载，测试原生存储、内容脚本注入、扩展页面 CSP、弹窗和设置同步；另用背景条纹的实际像素验证折射位移、文字清晰度和作用范围，避免只检查组件是否存在。需要完整 Chromium，不能使用 headless-shell，可通过 `MAIMEMO_EXTENSION_BROWSER_EXECUTABLE` 指定路径。详见 [开发与测试](CONTRIBUTING.md)。
-
-浏览器测试用本地拦截的模拟页面验证初始加载、异步勾选、仅进入一次、净化恢复、三色按钮、悬停提示、真实键盘事件、路由切换、主题、设置页和弹窗。布局覆盖 320 / 390 / 800 / 1440 / 1880 像素宽度，检查释义出现前后的单词与音标坐标、满高满宽、头部控件不重叠、原生侧栏切换、长释义与例句内部滚动，以及离开学习路由后的布局还原。墨墨更新页面结构后，仍需在实际学习页复核兼容性。
-
-## 项目结构
-
-```text
-core/        快捷键工具、打字状态机、统一设置模型、扩展界面公共样式
-content/     网页键盘操作、原地拼写、自动进入、主题与学习页样式
-options/     完整偏好设置
-popup/       快速开关与主题切换
-tests/       无依赖单元测试与可选浏览器模拟测试
-scripts/     语法检查与扩展打包
-ui/          Liquid Glass 背景适配层源代码
-docs/        图标权利、第三方许可证、玻璃说明、截图与用户脚本来源
-dist/        生成的双版本安装目录（不提交 Git）
-releases/    生成的双版本 ZIP（不提交 Git）
-```
-
-## 数据与权限
-
-只使用 `storage` 权限，并将匹配范围限制在墨墨官网学习页和学习应用。只从当前页面读取展示和控件识别所需的 DOM，持久化数据仅有开关、主题和快捷键；不读取账号凭证或页面 token，不持久化词汇、例句或记忆历史。扩展通过网页现有控件触发正常 DOM 点击，不调用墨墨接口或直接修改复习数据。
-
-项目是独立的网页辅助工具，与墨墨官方无隶属关系。项目自身源码采用 MIT License，见根目录 `LICENSE`。组件许可证见 `docs/third-party-licenses.txt`；官网图标用于扩展页面内的视觉复用，不作为 GitHub 仓库头像或项目自有 Logo，来源和权利边界见 `docs/brand-assets.md`。
+仅申请 `storage` 权限，仅在墨墨学习页生效，只保存主题、开关和快捷键设置，不读取账号凭证或学习数据。项目源码采用 MIT License（[LICENSE](LICENSE)）。

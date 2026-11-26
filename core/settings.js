@@ -9,7 +9,8 @@
     enabled: true,
     autoStart: true,
     shortcuts: Object.freeze({ reveal: 'Space', familiar: '1', vague: '2', forget: '3', wellFamiliar: '4' }),
-    appearance: Object.freeze({ cleanPage: true, hideToasts: true, redesign: true, trafficLights: true, theme: 'system', glass: 'full' })
+    appearance: Object.freeze({ cleanPage: true, hideToasts: true, redesign: true, trafficLights: true, theme: 'system', glass: 'full' }),
+    typing: Object.freeze({ enabled: true, hideWordOnReveal: true })
   });
 
   function normalize(input) {
@@ -19,13 +20,18 @@
     }
     appearance.theme = ['system', 'light', 'dark'].includes(input?.appearance?.theme) ? input.appearance.theme : 'system';
     appearance.glass = ['full', 'system', 'solid'].includes(input?.appearance?.glass) ? input.appearance.glass : 'full';
+    const typing = {
+      enabled: input?.typing?.enabled !== false,
+      hideWordOnReveal: input?.typing?.hideWordOnReveal !== false
+    };
     return {
       enabled: input?.enabled !== false,
       autoStart: input?.autoStart !== false,
       shortcuts: Object.fromEntries(ACTIONS.map((action) => [action,
         globalThis.MaimemoShortcutUtils.canonicalizeShortcut(input?.shortcuts?.[action] ?? DEFAULTS.shortcuts[action])
       ])),
-      appearance
+      appearance,
+      typing
     };
   }
 
@@ -39,7 +45,8 @@
     const next = normalize({
       ...current, ...patch,
       shortcuts: { ...current.shortcuts, ...patch.shortcuts },
-      appearance: { ...current.appearance, ...patch.appearance }
+      appearance: { ...current.appearance, ...patch.appearance },
+      typing: { ...current.typing, ...patch.typing }
     });
     await extensionAPI.storage.local.set({ [KEY]: next });
     return next;

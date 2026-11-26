@@ -11,9 +11,17 @@ function setStatus(message, error = false) {
   node.classList.toggle('error', error);
 }
 
+function syncTypingControls() {
+  const enabled = document.querySelector('#typingEnabled').checked;
+  document.querySelector('#hideWordOnReveal').disabled = !enabled;
+}
+
 function render() {
   document.querySelector('#enabled').checked = settings.enabled;
   document.querySelector('#autoStart').checked = settings.autoStart;
+  document.querySelector('#typingEnabled').checked = settings.typing.enabled;
+  document.querySelector('#hideWordOnReveal').checked = settings.typing.hideWordOnReveal;
+  syncTypingControls();
   for (const flag of flags) document.querySelector(`#${flag}`).checked = settings.appearance[flag];
   document.querySelector('#theme').value = settings.appearance.theme;
   document.querySelector('#glass').value = settings.appearance.glass;
@@ -58,9 +66,15 @@ function collect() {
     enabled: document.querySelector('#enabled').checked,
     autoStart: document.querySelector('#autoStart').checked,
     appearance: { ...Object.fromEntries(flags.map((flag) => [flag, document.querySelector(`#${flag}`).checked])), theme: document.querySelector('#theme').value, glass: document.querySelector('#glass').value },
+    typing: {
+      enabled: document.querySelector('#typingEnabled').checked,
+      hideWordOnReveal: document.querySelector('#hideWordOnReveal').checked
+    },
     shortcuts: Object.fromEntries(config.ACTIONS.map((action) => [action, document.querySelector(`#shortcut-${action}`).value]))
   });
 }
+
+document.querySelector('#typingEnabled').addEventListener('change', syncTypingControls);
 
 document.querySelector('#theme').addEventListener('change', (event) => {
   document.documentElement.dataset.theme = event.target.value;

@@ -74,6 +74,7 @@ try {
   assert.equal(await study.getAttribute('html', 'data-mm-theme'), 'light');
   assert.equal(await study.locator('#mm-traffic-controls button:disabled').count(), 3, 'recall must retain all three disabled buttons');
   const headerSelectors = ['.back', '.rev-top-stats > taro-text-core:nth-of-type(1)', '.rev-top-stats > taro-text-core:nth-of-type(2)', '#mm-traffic-controls'];
+  const word = await study.locator('.spelling').boundingBox();
   const headerBefore = await Promise.all(headerSelectors.map((selector) => study.locator(selector).boundingBox()));
   await study.keyboard.press('Space');
   await study.waitForSelector('[data-mm-action="familiar"]:enabled');
@@ -81,16 +82,19 @@ try {
   await study.waitForSelector('#mm-memory-history');
   assert.ok(await study.locator('.interp-ctn').evaluate((node) => getComputedStyle(node).backdropFilter.includes('url(')), 'full glass must refract even if the host OS reduces transparency');
   assert.match(await study.locator('#mm-memory-history').textContent(), /记忆 2 次/);
-  const word = await study.locator('.spelling').boundingBox();
+  const revealedWord = await study.locator('#mm-typing-display').boundingBox();
+  assert.equal(revealedWord.y, word.y, 'revealing with in-place typing must keep the word slot in place');
   const overflow = await study.evaluate(() => ({ height: document.scrollingElement.scrollHeight, viewport: innerHeight }));
   assert.ok(overflow.height <= overflow.viewport + 1, 'injected layout must not create outer scrolling');
   await screenshot(study, 'chromium-extension-light.png');
   await study.keyboard.press('1');
   assert.equal(await study.evaluate(() => window.__fixture.counts.familiar), 1, 'an actual content script must click once and suppress the native duplicate');
   assert.deepEqual(await study.evaluate(() => window.__nativeEvents.filter((event) => event.endsWith(':1'))), []);
+  await study.waitForFunction(() => document.documentElement.getAttribute('data-mm-typing-active') === 'false');
   const after = await study.locator('.spelling').boundingBox();
   assert.equal(after.y, word.y, 'answer visibility must not move the word');
 
+  await options.locator('#typingEnabled').uncheck();
   await options.locator('#shortcut-familiar').press('q');
   await options.locator('#theme').selectOption('dark');
   await options.locator('#save').click();

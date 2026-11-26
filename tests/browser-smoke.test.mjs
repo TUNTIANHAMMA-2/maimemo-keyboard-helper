@@ -9,7 +9,7 @@ const { chromium } = await import(modulePath ? pathToFileURL(modulePath).href : 
 const project = fileURLToPath(new URL('../', import.meta.url));
 const read = (path) => readFile(resolve(project, path), 'utf8');
 const appURL = 'https://tc-apis.maimemo.com/webstudy/app';
-const scripts = (await Promise.all(['core/shortcut-utils.js', 'core/settings.js', 'content/liquid-glass.js', 'content/maimemo-page.js', 'content/maimemo-shortcuts.js'].map(read))).join('\n');
+const scripts = (await Promise.all(['core/shortcut-utils.js', 'core/settings.js', 'core/typing-engine.js', 'content/liquid-glass.js', 'content/maimemo-page.js', 'content/maimemo-typing.js', 'content/maimemo-shortcuts.js'].map(read))).join('\n');
 const css = `${await read('content/maimemo-page.css')}\n${await read('core/liquid-glass.css')}`;
 const studyHTML = await read('tests/fixtures/study.html');
 const apiFlag = process.argv.indexOf('--api');
@@ -158,11 +158,14 @@ async function checkRevealPosition(page) {
   await frames(page);
   await checkWordAndPhoneticCenter(page);
   assert.equal(await page.locator('.rev-top .interp-ctn').count(), 0, 'definition must remain absent until reveal');
-  const selectors = ['.rev-top .spelling', '.rev-top > .phonetic', '.back', '.rev-top-stats > taro-text-core:nth-of-type(1)', '.rev-top-stats > taro-text-core:nth-of-type(2)', ...['forget', 'vague', 'familiar'].map((action) => `[data-mm-action="${action}"]`)];
+  const selectors = ['.rev-top > .phonetic', '.back', '.rev-top-stats > taro-text-core:nth-of-type(1)', '.rev-top-stats > taro-text-core:nth-of-type(2)', ...['forget', 'vague', 'familiar'].map((action) => `[data-mm-action="${action}"]`)];
   assert.equal(await page.locator('#mm-traffic-controls button:disabled').count(), 3, 'all three buttons stay visible but cannot submit before reveal');
+  const beforeWord = await page.locator('.rev-top .spelling').boundingBox();
   const before = await Promise.all(selectors.map((selector) => page.locator(selector).boundingBox()));
   await reveal(page);
   await checkWordAndPhoneticCenter(page);
+  const typingActive = await page.evaluate(() => document.documentElement.getAttribute('data-mm-typing-active') === 'true');
+  const afterWord = await page.locator(typingActive ? '#mm-typing-display' : '.rev-top .spelling').boundingBox();
   const after = await Promise.all(selectors.map((selector) => page.locator(selector).boundingBox()));
   const phonetic = await page.locator('.rev-top > .phonetic').boundingBox();
   const definition = await page.locator('.rev-top .interp-ctn').boundingBox();
@@ -173,6 +176,9 @@ async function checkRevealPosition(page) {
   if (width > 900) assert.ok(definition.y >= page.viewportSize().height / 2,
     `definition must sit in the lower half of the desktop viewport at ${width}px`);
   assert.equal(await page.locator('#mm-traffic-controls button:enabled').count(), 3);
+  for (const dimension of ['x', 'y', 'width', 'height']) {
+    assert.ok(Math.abs(beforeWord[dimension] - afterWord[dimension]) < 2, `word slot must not jump when revealing the definition (${dimension})`);
+  }
   for (let i = 0; i < selectors.length; i++) {
     for (const dimension of ['x', 'y', 'width', 'height']) assert.ok(Math.abs(before[i][dimension] - after[i][dimension]) < 1, `${selectors[i]} must not jump when revealing the definition`);
   }
@@ -181,7 +187,8 @@ async function checkRevealPosition(page) {
 async function checkWordAndPhoneticCenter(page) {
   const centers = await page.evaluate(() => {
     const pane = document.querySelector('.rev-top').getBoundingClientRect();
-    const word = document.querySelector('.rev-top .spelling');
+    const typingActive = document.documentElement.getAttribute('data-mm-typing-active') === 'true';
+    const word = document.querySelector(typingActive ? '#mm-typing-display .mm-typing-word' : '.rev-top .spelling');
     const range = document.createRange();
     range.selectNodeContents(word);
     const wordText = range.getBoundingClientRect();
@@ -363,7 +370,8 @@ try {
   await page.waitForSelector('[data-mm-refraction="true"]');
   assert.ok(await page.locator('[data-mm-refraction="true"]').evaluateAll((nodes) => nodes.every((node) => getComputedStyle(node).backdropFilter.includes('url('))), 'the upstream SVG must sample the host backdrop');
   assert.equal(await page.locator('.rev-scroller .phrase-phrase').first().evaluate((node) => Boolean(node.closest('.mm-liquid-mount')) || getComputedStyle(node).filter !== 'none'), false, 'glass filters must not warp the learning text');
-  const wordAfter = await page.locator('.rev-top .spelling').boundingBox();
+  const typingActive = await page.evaluate(() => document.documentElement.getAttribute('data-mm-typing-active') === 'true');
+  const wordAfter = await page.locator(typingActive ? '#mm-typing-display' : '.rev-top .spelling').boundingBox();
   await checkWordAndPhoneticCenter(page);
   assert.ok(Math.abs(wordBefore.y - wordAfter.y) < 1, 'revealing the answer must keep the word in place');
   await checkLayout(page);
@@ -399,7 +407,7 @@ try {
     assert.equal(await count(page, action), 1, `${action} must click the native control exactly once`);
   }
   assert.equal(await count(page, 'menu'), 0, '熟知 must never open the shared-class menu');
-  await change(page, { shortcuts: { familiar: 'q' } });
+  await change(page, { typing: { enabled: false }, shortcuts: { familiar: 'q' } });
   await reveal(page);
   assert.match(await page.getAttribute('[data-mm-action="familiar"]', 'aria-label'), /认识 · Q/);
   await page.keyboard.down('q');
@@ -425,7 +433,7 @@ try {
   assert.match(await page.getAttribute('[data-mm-action="familiar"]', 'aria-label'), /扩展快捷键已停用/);
   await page.keyboard.press('q');
   assert.equal(await count(page, 'familiar'), 2);
-  await change(page, { enabled: true, shortcuts: { familiar: 'Alt+q' } });
+  await change(page, { enabled: true, typing: { enabled: true }, shortcuts: { familiar: 'Alt+q' } });
   await page.keyboard.press('Alt+q');
   assert.equal(await count(page, 'familiar'), 3);
   await reveal(page);
@@ -450,7 +458,7 @@ try {
     window.__headerClicks = 0;
     document.querySelector('.rev-top').addEventListener('click', () => window.__headerClicks++);
   });
-  await page.locator('#mm-study-toolbar button').click();
+  await page.locator('#mm-theme-toggle').click();
   await page.waitForFunction(() => document.documentElement.getAttribute('data-mm-theme') === 'dark');
   assert.equal(await page.evaluate(() => window.__readStored().appearance.theme), 'dark', 'the page theme switch must persist');
   assert.equal(await page.evaluate(() => window.__readStored().shortcuts.familiar), 'Alt+Q');
@@ -501,7 +509,7 @@ try {
   await page.locator('.rev-scroller').hover();
   await page.mouse.wheel(0, 700);
   await page.waitForFunction(() => document.querySelector('.rev-scroller').scrollTop > 0);
-  await page.locator('.rev-top .spelling').hover();
+  await page.locator('#mm-typing-display').hover();
   await page.mouse.wheel(0, 400);
   await page.waitForFunction(() => document.querySelector('.rev-top').scrollTop > 0);
   assert.deepEqual(await page.locator('.rev-top-stats').boundingBox(), headerBeforeScroll, 'scrolling long content must not move the header');
@@ -692,6 +700,37 @@ try {
   assert.equal(await opaque.locator('#save').evaluate((node) => getComputedStyle(node).backdropFilter), 'none');
   await opaque.close();
   console.log('settings and popup: migration, recording, validation, persistence and partial updates passed');
+  const typingPage = await pageFor(studyHTML, { shortcuts: { reveal: 'R' } });
+  await frames(typingPage);
+  assert.equal(await typingPage.evaluate(() => document.documentElement.getAttribute('data-mm-typing-active')), 'false', 'recall page must not activate typing');
+  await typingPage.keyboard.press('r');
+  await frames(typingPage);
+  assert.equal(await count(typingPage, 'reveal'), 1, 'letter shortcuts on recall page must still trigger reveal');
+  assert.equal(await typingPage.evaluate(() => document.documentElement.getAttribute('data-mm-typing-active')), 'true', 'revealed page must activate in-place typing');
+  assert.equal(await typingPage.locator('#mm-typing-display').getAttribute('data-mm-hidden-word'), 'true');
+  assert.equal(await typingPage.locator('#mm-typing-display .mm-typing-word').textContent(), '\u00a0'.repeat('serendipity'.length), 'hidden mode must not show untyped target letters');
+  await typingPage.keyboard.press('s');
+  await typingPage.keyboard.press('a');
+  assert.equal(await typingPage.locator('#mm-typing-display .mm-typing-char[data-state="wrong"]').textContent(), 'a');
+  await typingPage.keyboard.press('Backspace');
+  assert.equal(await typingPage.locator('#mm-typing-display .mm-typing-char[data-state="wrong"]').count(), 0);
+  await typingPage.keyboard.press('Tab');
+  assert.equal(await typingPage.locator('#mm-typing-display').getAttribute('data-mm-hidden-word'), 'false', 'Tab should temporarily reveal the target word');
+  await typingPage.keyboard.press('Tab');
+  assert.equal(await typingPage.locator('#mm-typing-display').getAttribute('data-mm-hidden-word'), 'true');
+  for (const ch of 'erendipity') await typingPage.keyboard.press(ch);
+  assert.equal(await typingPage.locator('#mm-typing-display').getAttribute('data-mm-complete'), 'true');
+  await typingPage.keyboard.press('1');
+  await frames(typingPage);
+  assert.equal(await count(typingPage, 'familiar'), 1, 'numeric feedback shortcuts must keep working while typing is active');
+  assert.equal(await typingPage.evaluate(() => document.documentElement.getAttribute('data-mm-typing-active')), 'false', 'returning to recall must deactivate typing');
+  await reveal(typingPage);
+  await typingPage.locator('#mm-typing-toggle').click();
+  await frames(typingPage);
+  assert.equal(await typingPage.evaluate(() => document.documentElement.getAttribute('data-mm-typing-active')), 'false', 'toolbar toggle should disable typing immediately');
+  await idle(typingPage);
+  await typingPage.close();
+  console.log('in-place typing: recall isolation, hidden dictation, backspace, peek, shortcuts and toolbar toggle passed');
   assert.deepEqual(errors, [], 'browser pages must not report uncaught errors');
   console.log(`All browser smoke tests passed with ${apiNamespace} API (locally fulfilled fixtures, no real study submissions).`);
 } finally { await browser.close(); }

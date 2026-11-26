@@ -23,6 +23,10 @@ function render() {
   document.documentElement.dataset.glass = settings.appearance.glass;
   for (const name of ['enabled', 'autoStart']) document.querySelector(`#${name}`).checked = settings[name];
   for (const flag of flags) document.querySelector(`#${flag}`).checked = settings.appearance[flag];
+  document.querySelector('#typingEnabled').checked = settings.typing.enabled;
+  const hideWordInput = document.querySelector('#hideWordOnReveal');
+  hideWordInput.checked = settings.typing.hideWordOnReveal;
+  hideWordInput.disabled = !settings || saving || !settings.typing.enabled;
   document.querySelector('#glass').value = settings.appearance.glass;
   for (const button of themeButtons) button.setAttribute('aria-pressed', String(button.dataset.themeValue === settings.appearance.theme));
   for (const action of config.ACTIONS) {
@@ -88,6 +92,8 @@ async function update(patch, onSaved = () => {}) {
 
 for (const name of ['enabled', 'autoStart']) document.querySelector(`#${name}`).addEventListener('change', (event) => update({ [name]: event.target.checked }));
 for (const flag of flags) document.querySelector(`#${flag}`).addEventListener('change', (event) => update({ appearance: { [flag]: event.target.checked } }));
+document.querySelector('#typingEnabled').addEventListener('change', (event) => update({ typing: { enabled: event.target.checked } }));
+document.querySelector('#hideWordOnReveal').addEventListener('change', (event) => update({ typing: { hideWordOnReveal: event.target.checked } }));
 document.querySelector('#glass').addEventListener('change', (event) => update({ appearance: { glass: event.target.value } }));
 for (const button of themeButtons) button.addEventListener('click', () => update({ appearance: { theme: button.dataset.themeValue } }));
 

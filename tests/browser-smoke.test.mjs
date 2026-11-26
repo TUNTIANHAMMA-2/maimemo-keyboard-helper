@@ -700,7 +700,7 @@ try {
   assert.equal(await opaque.locator('#save').evaluate((node) => getComputedStyle(node).backdropFilter), 'none');
   await opaque.close();
   console.log('settings and popup: migration, recording, validation, persistence and partial updates passed');
-  const typingPage = await pageFor(studyHTML, { shortcuts: { reveal: 'R' } });
+  const typingPage = await pageFor(studyHTML, { shortcuts: { reveal: 'R', familiar: 'q' } });
   await frames(typingPage);
   assert.equal(await typingPage.evaluate(() => document.documentElement.getAttribute('data-mm-typing-active')), 'false', 'recall page must not activate typing');
   await typingPage.keyboard.press('r');
@@ -720,9 +720,10 @@ try {
   assert.equal(await typingPage.locator('#mm-typing-display').getAttribute('data-mm-hidden-word'), 'true');
   for (const ch of 'erendipity') await typingPage.keyboard.press(ch);
   assert.equal(await typingPage.locator('#mm-typing-display').getAttribute('data-mm-complete'), 'true');
-  await typingPage.keyboard.press('1');
+  assert.equal(await typingPage.locator('#mm-typing-display .mm-typing-hint').textContent(), '', 'completed word must not render completion hint text');
+  await typingPage.keyboard.press('q');
   await frames(typingPage);
-  assert.equal(await count(typingPage, 'familiar'), 1, 'numeric feedback shortcuts must keep working while typing is active');
+  assert.equal(await count(typingPage, 'familiar'), 1, 'letter feedback shortcuts must work immediately after typing completes');
   assert.equal(await typingPage.evaluate(() => document.documentElement.getAttribute('data-mm-typing-active')), 'false', 'returning to recall must deactivate typing');
   await reveal(typingPage);
   await typingPage.locator('#mm-typing-toggle').click();

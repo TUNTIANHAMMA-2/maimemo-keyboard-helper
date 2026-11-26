@@ -90,6 +90,7 @@ try {
   await study.keyboard.press('1');
   assert.equal(await study.evaluate(() => window.__fixture.counts.familiar), 1, 'an actual content script must click once and suppress the native duplicate');
   assert.deepEqual(await study.evaluate(() => window.__nativeEvents.filter((event) => event.endsWith(':1'))), []);
+  await study.waitForFunction(() => document.documentElement.getAttribute('data-mm-typing-active') === 'false');
   const after = await study.locator('.spelling').boundingBox();
   assert.equal(after.y, word.y, 'answer visibility must not move the word');
 

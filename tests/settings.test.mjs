@@ -22,6 +22,13 @@ for (const namespace of ['browser', 'chrome']) {
   assert.equal(old.autoStart, true);
   assert.equal(old.appearance.theme, 'system');
   assert.equal(old.appearance.glass, 'full', 'upgraded settings must explicitly enable the requested glass effect');
+  assert.equal(old.typing.enabled, true, 'upgraded settings enable in-place reveal typing by default');
+  assert.equal(old.typing.hideWordOnReveal, true, 'upgraded settings hide word on reveal by default');
+  await config.update({ typing: { hideWordOnReveal: false } });
+  assert.equal(stored.typing.enabled, true, 'partial typing update preserves typing.enabled');
+  assert.equal(stored.typing.hideWordOnReveal, false);
+  await config.update({ typing: { enabled: false } });
+  assert.equal(stored.typing.hideWordOnReveal, false, 'disabling typing preserves hideWordOnReveal preference');
   await config.update({ appearance: { theme: 'dark', hideToasts: false } });
   assert.equal(stored.shortcuts.familiar, 'Q', 'appearance changes preserve keyboard preferences');
   assert.equal(stored.appearance.hideToasts, false);

@@ -37,7 +37,7 @@
         "https://tc-apis.maimemo.com/webstudy/app*"
       ],
       "css": ["content/maimemo-page.css", "core/liquid-glass.css"],
-      "js": ["core/shortcut-utils.js", "core/settings.js", "content/liquid-glass.js", "content/maimemo-page.js", "content/maimemo-shortcuts.js"],
+      "js": ["core/shortcut-utils.js", "core/settings.js", "core/typing-engine.js", "content/liquid-glass.js", "content/maimemo-page.js", "content/maimemo-typing.js", "content/maimemo-shortcuts.js"],
       "run_at": "document_start",
       "all_frames": true
     }

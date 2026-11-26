@@ -16,8 +16,10 @@
   let pending = false;
   let toolbar;
   let themeButton;
+  let typingButton;
   let brandLogo;
   let themeSaving = false;
+  let typingSaving = false;
   let lastRoute = location.hash;
   let startClicked = false;
   let checkboxClicked = false;
@@ -52,6 +54,29 @@
       setAttribute(themeButton, 'aria-label', label);
       setAttribute(themeButton, 'title', label);
     }
+    if (typingButton) {
+      const enabled = Boolean(settings.typing?.enabled);
+      if (typingButton.textContent !== '⌨') typingButton.textContent = '⌨';
+      const label = enabled ? '释义页原地拼写：已开启，点击关闭' : '释义页原地拼写：已关闭，点击开启';
+      setAttribute(typingButton, 'aria-label', label);
+      setAttribute(typingButton, 'title', label);
+      setAttribute(typingButton, 'aria-pressed', String(enabled));
+      setAttribute(typingButton, 'data-mm-active', String(enabled));
+    }
+  }
+
+  async function toggleTyping() {
+    if (typingSaving) return;
+    typingSaving = true;
+    try {
+      settings = await config.update({ typing: { enabled: !settings.typing?.enabled } });
+      applyTheme();
+      globalThis.MaimemoTyping?.refresh();
+    } catch {
+      if (typingButton) typingButton.title = '拼写设置保存失败，请在扩展设置中重试';
+    } finally {
+      typingSaving = false;
+    }
   }
 
   async function cycleTheme() {
@@ -75,15 +100,23 @@
       toolbar = document.createElement('div');
       toolbar.id = 'mm-study-toolbar';
       toolbar.setAttribute('role', 'group');
-      toolbar.setAttribute('aria-label', '学习页外观');
+      toolbar.setAttribute('aria-label', '学习页工具');
+      typingButton = document.createElement('button');
+      typingButton.type = 'button';
+      typingButton.id = 'mm-typing-toggle';
+      typingButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleTyping();
+      });
       themeButton = document.createElement('button');
       themeButton.type = 'button';
+      themeButton.id = 'mm-theme-toggle';
       themeButton.addEventListener('click', (event) => {
         // The site's vocabulary header also plays audio on click.
         event.stopPropagation();
         cycleTheme();
       });
-      toolbar.append(themeButton);
+      toolbar.append(typingButton, themeButton);
     }
     if (toolbar.parentElement !== host) host.append(toolbar);
   }
@@ -386,7 +419,7 @@
   const observer = new MutationObserver((records) => {
     if (records.some((record) => {
       const node = record.target instanceof Element ? record.target : record.target.parentElement;
-      return !node?.closest('.mm-liquid-mount');
+      return !node?.closest('.mm-liquid-mount, #mm-typing-display');
     })) schedule();
   });
   observer.observe(document, { childList: true, subtree: true, characterData: true, attributes: true,
@@ -402,6 +435,7 @@
     config.read().then((next) => {
       settings = next;
       refresh();
+      globalThis.MaimemoTyping?.refresh();
       globalThis.MaimemoLiquidGlass?.refresh();
       sendResponse({ ok: true });
     }).catch(() => sendResponse({ ok: false }));

@@ -385,9 +385,10 @@ try {
   await page.locator('.interp-ctn').hover();
   await frames(page);
   assert.deepEqual(await page.locator('.interp-ctn').boundingBox(), definitionBeforeHover, 'glass hover effects must not move or stretch the native card');
+  await change(page, { typing: { enabled: false } });
   await screenshot(page, 'study-light.png');
   await idle(page);
-  await change(page, { appearance: { theme: 'dark' } });
+  await change(page, { appearance: { theme: 'dark' }, typing: { enabled: true } });
   assert.equal(await page.getAttribute('html', 'data-mm-theme'), 'dark');
   await screenshot(page, 'study-dark.png');
   await checkMemoryHistory(page);

@@ -542,11 +542,10 @@
 }
 #mm-study-toolbar #mm-typing-toggle {
   font-size: 16px;
-  opacity: .62;
+  opacity: .55;
 }
 #mm-study-toolbar #mm-typing-toggle[data-mm-active="true"] {
   opacity: 1;
-  border-color: var(--mm-accent);
 }
 #mm-study-toolbar button:hover { background: var(--lg-fill-strong); }
 #mm-study-toolbar button:active { background: var(--lg-pressed); }

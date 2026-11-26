@@ -129,7 +129,7 @@
 
     let hint = '';
     if (result.complete) {
-      hint = '✓ 拼写完成';
+      hint = '';
     } else if (result.hasError) {
       hint = 'Backspace 退格修正 · Esc 清空';
     } else if (hideWord) {
@@ -200,6 +200,17 @@
     if (event.composedPath().some(isEditableTarget)) return;
 
     const code = event.code || event.key;
+
+    if (engine.isComplete(activeState)) {
+      if (event.key === 'Escape' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+        suppress(event);
+        pressedKeys.add(code);
+        clearPeek();
+        activeState = engine.reset(activeState);
+        render();
+      }
+      return;
+    }
 
     if (event.ctrlKey || event.altKey || event.metaKey) {
       if (event.ctrlKey && !event.altKey && !event.metaKey && event.key === 'Backspace') {
